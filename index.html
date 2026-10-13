@@ -262,6 +262,9 @@ async function api(url, opt = {}, reintento = true) {
   return r;
 }
 const q = s => encodeURIComponent(s);
+/* Saca el ID de cliente de lo que se pegó (aunque vengan espacios, comillas o texto de más). */
+function limpiarId(t) { const m_ = String(t || "").match(/[0-9]+-[a-z0-9_]+\.apps\.googleusercontent\.com/i); return m_ ? m_[0] : ""; }
+const verId = id => id ? id.slice(0, 12) + "…" + id.slice(-32) : "—";
 async function listar(consulta, campos = "files(id,name,parents,modifiedTime)") {
   const r = await api(`${API}/files?q=${q(consulta)}&fields=${q(campos)}&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true`);
   return (await r.json()).files || [];
@@ -423,7 +426,7 @@ function pantallaInicioSesion(v, primera) {
   const c = S.cfg;
   v.innerHTML = `<h2>${primera ? "Conectar con tu Google Drive" : "Volver a iniciar sesión"}</h2>
   <div class="card">${primera ? "Una sola vez: pega el <b>Client ID</b> de Google y el nombre de tu Excel. Después se conecta con tu cuenta." : "Tu sesión de Google venció. Toca el botón para continuar."}
-  <label>Client ID de Google</label><input id="cid" value="${esc(c.clientId)}" placeholder="123456-abc.apps.googleusercontent.com" autocapitalize="off" autocorrect="off">
+  <label>Client ID de Google</label><input id="cid" value="${esc(c.clientId)}" placeholder="123456-abc.apps.googleusercontent.com" autocapitalize="off" autocorrect="off" spellcheck="false">${c.clientId ? `<div class="t2" style="margin-top:4px">Cargado ahora: ${esc(verId(c.clientId))}</div>` : ""}
   <label>Nombre de tu Excel en Drive</label><input id="exn" value="${esc(c.excel)}" autocapitalize="off">
   <div style="height:14px"></div><button class="b full" id="bIngresar">Ingresar con Google</button></div>
   <details class="card"><summary>¿Cómo consigo el Client ID?</summary><ol>
@@ -433,8 +436,9 @@ function pantallaInicioSesion(v, primera) {
   <li><b>Credenciales → Crear credenciales → ID de cliente de OAuth</b>, tipo <b>Aplicación web</b>. En <b>Orígenes autorizados de JavaScript</b> pon la dirección donde publicaste esta app (ej. <code>https://tuusuario.github.io</code>, sin barra final).</li>
   <li>Copia el <b>ID de cliente</b> y pégalo arriba. Al ingresar, Google dirá «app no verificada»: toca <b>Avanzada → Ir a… (no seguro)</b>; es tu propia app.</li></ol></details>`;
   $("#bIngresar").onclick = async () => {
-    S.cfg.clientId = $("#cid").value.trim(); S.cfg.excel = $("#exn").value.trim() || "recetas.xlsx";
-    if (!S.cfg.clientId) return toast("Falta el Client ID");
+    const id = limpiarId($("#cid").value);
+    if (!id) return toast("Eso no parece un ID de cliente. Tiene que verse así: 123456-abc.apps.googleusercontent.com");
+    S.cfg.clientId = id; S.cfg.excel = $("#exn").value.trim() || "recetas.xlsx";
     S.cfg.ids = {}; guardarCfg();
     try { await pedirToken(true); S.error = ""; sincronizar(); } catch (e) { toast("No se pudo ingresar: " + e.message); }
   };
@@ -693,11 +697,12 @@ function abrirSheet(h) { $("#sheetIn").innerHTML = h; $("#sheet").classList.add(
 function cerrarSheet() { $("#sheet").classList.remove("on"); }
 function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
+  <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
   <div style="height:12px"></div><button class="b full" id="ag">Guardar y volver a buscar mis archivos</button><div style="height:8px"></div>
   <button class="b sec full" id="as">Cerrar sesión</button><div style="height:8px"></div><button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
-  $("#ag").onclick = () => { S.cfg.clientId = $("#acid").value.trim(); S.cfg.excel = $("#aex").value.trim() || "recetas.xlsx"; S.cfg.ids = {}; guardarCfg(); S.data = null; localStorage.removeItem("madom_cache"); cerrarSheet(); sincronizar(true); };
+  $("#ag").onclick = () => { const id = limpiarId($("#acid").value); if (!id) return toast("Eso no parece un ID de cliente. Tiene que terminar en .apps.googleusercontent.com"); S.cfg.clientId = id; S.cfg.excel = $("#aex").value.trim() || "recetas.xlsx"; S.cfg.ids = {}; guardarCfg(); S.data = null; localStorage.removeItem("madom_cache"); cerrarSheet(); sincronizar(true); };
   $("#as").onclick = () => { S.token = null; localStorage.removeItem("madom_tok"); try { google.accounts.oauth2.revoke && S.token; } catch {} S.error = "SESION"; cerrarSheet(); pintar(); };
 }
 
