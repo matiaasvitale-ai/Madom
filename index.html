@@ -291,7 +291,7 @@ async function ubicarArchivos(eleccion) {
     if (!hall.length) throw new Error(`No encontré «${S.cfg.excel}» en tu Drive. Revisa el nombre en Ajustes y que sea un Excel (.xlsx) dentro de la carpeta sincronizada.`);
     if (hall.length > 1 || parecidos) {
       for (const h of hall) { try { const p = await (await api(`${API}/files/${h.parents[0]}?fields=name&supportsAllDrives=true`)).json(); h.carpeta = p.name; } catch { h.carpeta = "?"; } }
-      S.candidatos = hall; return false;
+      S.candidatos = hall; S.parecidos = parecidos; return false;
     }
     ex = hall[0];
   }
@@ -437,7 +437,7 @@ function pantallaInicioSesion(v, primera) {
   };
 }
 function pantallaElegirExcel(v) {
-  v.innerHTML = `<h2>${S.candidatos.length > 1 ? "Elige tu Excel" : "¿Es este tu Excel?"}</h2><div class="suave" style="margin-bottom:10px">No encontré «${esc(S.cfg.excel)}» exacto. Elige el que usa tu app de la PC:</div>` +
+  v.innerHTML = `<h2>${!S.parecidos ? `Hay varios «${esc(S.cfg.excel)}»` : S.candidatos.length > 1 ? "Elige tu Excel" : "¿Es este tu Excel?"}</h2><div class="suave" style="margin-bottom:10px">${S.parecidos ? `No encontré «${esc(S.cfg.excel)}» exacto. ` : ""}Elige el que usa tu app de la PC:</div>` +
     S.candidatos.map((h, i) => `<button class="card b sec full" style="text-align:left" data-e="${i}"><div class="t1">${esc(h.name)}</div><div class="t2">Carpeta: ${esc(h.carpeta)}</div><div class="t2">Modificado ${esc(new Date(h.modifiedTime).toLocaleString("es-AR"))}</div></button>`).join("");
   v.querySelectorAll("[data-e]").forEach(b => b.onclick = async () => { const h = S.candidatos[+b.dataset.e]; S.cfg.excel = h.name; await ubicarArchivos(h); sincronizar(true); });
 }
@@ -554,22 +554,30 @@ function vRecetas() {
   const l = todas.filter(r => (cat === "Todas" || r.cat === cat) && (!qn || norm(r.nombre).includes(qn)));
   return `<h2>Recetas</h2><input id="bus" type="search" placeholder="Buscar receta…" value="${esc(S.busca)}" autocomplete="off"><div style="height:8px"></div>
   <select id="catSel"><option>Todas</option>${cats.map(c => `<option ${c === cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select><div style="height:10px"></div>` +
-    (l.length ? l.map(r => `<div class="card fila" data-r="${esc(r.hoja + "|" + r.nombre)}" style="cursor:pointer"><div class="g"><div class="t1">${esc(r.nombre)}</div><div class="t2">${esc(r.cat)} · ${r.filas.length} ingrediente(s) · ${fmtPeso(r.kg)}</div></div><div class="monto">${money(r.costo)}</div></div>`).join("") : `<div class="vacio">${todas.length ? "Sin resultados" : "No encontré recetas en el Excel"}</div>`);
+    (l.length ? l.map(r => `<div class="card fila" data-r="${esc(r.hoja + "|" + r.nombre)}" style="cursor:pointer"><div class="g"><div class="t1">${esc(r.nombre)}</div><div class="t2">${esc(r.cat)} · ${r.filas.length} ingrediente(s)</div></div><div class="monto suave">${fmtPeso(r.kg)}</div></div>`).join("") : `<div class="vacio">${todas.length ? "Sin resultados" : "No encontré recetas en el Excel"}</div>`);
+}
+function cantReceta(f, mult) {
+  const q = f.c * mult, u = f.u.trim().toLowerCase();
+  if (u === "kg" || u === "kgs" || u === "kilo" || u === "kilos") return q < 1 ? [cant(q * 1000) + " g", cant(q) + " kg"] : [cant(q) + " kg", ""];
+  if (u === "lt" || u === "l" || u === "litro" || u === "litros") return q < 1 ? [cant(q * 1000) + " ml", cant(q) + " lt"] : [cant(q) + " lt", ""];
+  return [cant(q) + (f.u ? " " + f.u : ""), ""];
 }
 function abrirReceta(clave, mult = 1) {
   const [hoja, ...rest] = clave.split("|"), nombre = rest.join("|"), r = S.data.recetas.find(x => x.hoja === hoja && x.nombre === nombre); if (!r) return;
-  const fmtQ = f => { const q = f.c * mult, u = f.u.toLowerCase(); return cant(q) + (f.u ? " " + esc(f.u) : "") + ((u === "kg" || u === "kgs") && q < 1 ? ` <span class="suave">(${cant(q * 1000)} g)</span>` : ""); };
-  const tot = r.costo * mult, preset = [1, 2, 3, 5, 10];
+  const verCostos = LS.get("madom_costos", false), preset = [1, 2, 3, 5, 10];
   abrirSheet(`<h2>${esc(r.nombre)}</h2><div class="t2">${esc(r.hoja)}</div>
   <label>Multiplicador</label><div class="seg" id="rm">${preset.map(x => `<button data-x="${x}" class="${mult === x ? "on" : ""}">×${x}</button>`).join("")}</div>
   <input id="rmx" inputmode="decimal" placeholder="Otro multiplicador (ej. 0,5 o 2,5)" value="${preset.includes(mult) ? "" : cant(mult)}">
-  <div class="card" style="margin-top:12px">${r.filas.map(f => `<div class="fila" style="padding:5px 0"><div class="g"><div>${esc(f.n)}</div><div class="t2">${fmtQ(f)}</div></div><div class="monto">${money(f.costo * mult)}</div></div>`).join("")}
-  <hr style="border:0;border-top:1px solid var(--borde)"><div class="fila"><div class="g t1">Costo total</div><div class="monto" style="font-size:18px">${money(tot)}</div></div>
-  <div class="t2">Peso aprox. ${fmtPeso(r.kg * mult)}${r.excl ? ` · ${r.excl} ingrediente(s) sin sumar (cajas, piezas, etc.)` : ""}</div></div>
+  <div class="card" style="margin-top:12px">${r.filas.map(f => { const [g, alt] = cantReceta(f, mult); return `<div class="fila" style="padding:8px 0;border-bottom:1px solid var(--borde)"><div class="g">${esc(f.n)}</div><div style="text-align:right"><div class="monto" style="font-size:19px">${esc(g)}</div>${alt ? `<div class="t2">${esc(alt)}</div>` : ""}${verCostos ? `<div class="t2">${money(f.costo * mult)}</div>` : ""}</div></div>`; }).join("")}
+  <div class="fila" style="padding-top:10px"><div class="g t1">Peso total aprox.</div><div class="monto" style="font-size:19px">${fmtPeso(r.kg * mult)}</div></div>
+  ${r.excl ? `<div class="t2">${r.excl} ingrediente(s) sin sumar al peso (cajas, piezas, etc.)</div>` : ""}
+  ${verCostos ? `<div class="fila" style="padding-top:6px"><div class="g t1">Costo total</div><div class="monto">${money(r.costo * mult)}</div></div>` : ""}</div>
+  <label class="fila" style="text-transform:none;font-size:14px;color:var(--text);margin:4px 0 12px"><input type="checkbox" id="rcs" ${verCostos ? "checked" : ""} style="width:22px;min-height:22px"> Mostrar costos</label>
   <button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
   const sh = $("#sheetIn");
   sh.querySelectorAll("#rm button").forEach(b => b.onclick = () => abrirReceta(clave, +b.dataset.x));
   $("#rmx").onchange = e => { const n = num(e.target.value); abrirReceta(clave, n > 0 ? n : 1); };
+  $("#rcs").onchange = e => { LS.set("madom_costos", e.target.checked); abrirReceta(clave, mult); };
 }
 
 function vClientes() {
