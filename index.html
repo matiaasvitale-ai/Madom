@@ -122,7 +122,7 @@ const S = {
   token: LS.get("madom_tok", null),
   data: LS.get("madom_cache", null),      // {prods, secs, insumos, ventas, compras, stock, xlsxMod, cuando}
   offline: false, vista: "inicio", mes: hoyISO().slice(0, 7), consulta: "productos", cart: LS.get("madom_cart", []),
-  busca: "", seccion: "Todas", catRec: "Todas", cargando: false, candidatos: null, error: "", respaldado: false,
+  busca: "", seccion: "Todas", catRec: "Todas", cargando: false, candidatos: null, error: "", respaldados: {}, subC: "pend", mesC: hoyISO().slice(0, 7),
 };
 const guardarCfg = () => LS.set("madom_cfg", S.cfg);
 const guardarCache = () => { try { localStorage.setItem("madom_cache", JSON.stringify(S.data)); } catch {} };
@@ -333,28 +333,29 @@ async function sincronizar(manual) {
 }
 
 /* ---------- escritura de ventas (lee lo último de Drive, cambia y guarda) ---------- */
-async function respaldoAntes(contenido) {
-  if (S.respaldado || !S.cfg.ids.ventas) return;
+async function respaldoAntes(clave, contenido) {
+  if (S.respaldados[clave] || !S.cfg.ids[clave]) return;
   let carpeta = (await listar(`name='respaldos' and mimeType='application/vnd.google-apps.folder' and '${S.cfg.folderId}' in parents and trashed=false`))[0];
   if (!carpeta) carpeta = await (await api(`${API}/files?supportsAllDrives=true`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: "respaldos", mimeType: "application/vnd.google-apps.folder", parents: [S.cfg.folderId]})})).json();
   const d = new Date(), p = n => String(n).padStart(2, "0");
   const sello = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-  const c = await (await api(`${API}/files?supportsAllDrives=true`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: `ventas_madom_${sello}.json`, parents: [carpeta.id], mimeType: "application/json"})})).json();
+  const c = await (await api(`${API}/files?supportsAllDrives=true`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: `${clave}_madom_${sello}.json`, parents: [carpeta.id], mimeType: "application/json"})})).json();
   await api(`${UP}/files/${c.id}?uploadType=media&supportsAllDrives=true`, {method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify(contenido, null, 1)});
-  S.respaldado = true;
+  S.respaldados[clave] = true;
 }
-async function mutarVentas(fn) {
+/* Lee lo último de Drive, aplica el cambio y guarda (así no se pisa lo que cargó otro dispositivo). */
+async function mutar(clave, vacio, fn) {
   if (S.offline || !navigator.onLine) throw new Error("Necesitas conexión a internet para guardar.");
-  const fresco = await leerJSON(S.cfg.ids.ventas, {ventas: [], sig: 1});
-  const base = {ventas: fresco.ventas, sig: fresco.sig};
-  const copia = JSON.parse(JSON.stringify(base));
-  await respaldoAntes(copia);
+  const base = await leerJSON(S.cfg.ids[clave], vacio);
+  await respaldoAntes(clave, JSON.parse(JSON.stringify(base)));
   const res = fn(base);
-  S.cfg.ids.ventas = await escribirJSON(S.cfg.ids.ventas, "ventas_madom.json", base);
+  S.cfg.ids[clave] = await escribirJSON(S.cfg.ids[clave], `${clave}_madom.json`, base);
   guardarCfg();
-  S.data.ventas = base; guardarCache();
+  S.data[clave] = base; guardarCache();
   return res;
 }
+const mutarVentas = fn => mutar("ventas", {ventas: [], sig: 1}, fn);
+const mutarCompras = fn => mutar("compras", VACIO.compras, fn);
 
 /* ---------- cálculos (mismos que la app de la PC) ---------- */
 const totalCobrado = v => (v.pagos || []).reduce((a, p) => a + p.monto, 0);
@@ -394,8 +395,9 @@ function alertas() {
 }
 
 /* ---------- pantallas ---------- */
-const TABS = [["inicio", "🏠", "Inicio"], ["vender", "🛒", "Vender"], ["ventas", "🧾", "Ventas"], ["recetas", "📖", "Recetas"], ["clientes", "👥", "Clientes"], ["consultar", "🔎", "Consultar"]];
-function pintarNav() { $("#nav").innerHTML = TABS.map(([k, i, t]) => `<button data-v="${k}" class="${S.vista === k ? "on" : ""}"><span>${i}</span>${t}</button>`).join(""); }
+const TABS = [["inicio", "🏠", "Inicio"], ["vender", "🛒", "Vender"], ["ventas", "🧾", "Ventas"], ["compras", "📦", "Compras"], ["recetas", "📖", "Recetas"], ["mas", "☰", "Más"]];
+const ES_MAS = ["mas", "clientes", "consultar"];
+function pintarNav() { $("#nav").innerHTML = TABS.map(([k, i, t]) => `<button data-v="${k}" class="${S.vista === k || (k === "mas" && ES_MAS.includes(S.vista)) ? "on" : ""}"><span>${i}</span>${t}</button>`).join(""); }
 function pintarEstado() {
   const e = $("#est");
   if (S.cargando) e.textContent = "Actualizando…";
@@ -412,7 +414,8 @@ function pintar() {
   let h = "";
   if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
   if (S.offline) h += `<div class="aviso">Sin conexión: ves los últimos datos guardados. Para registrar ventas hace falta internet.</div>`;
-  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, recetas: vRecetas, clientes: vClientes, consultar: vConsultar})[S.vista]();
+  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, compras: vCompras, recetas: vRecetas, mas: vMas, clientes: vClientes, consultar: vConsultar})[S.vista]();
+  if (S.vista === "clientes" || S.vista === "consultar") h = `<button class="b sec" data-go="mas" style="margin-bottom:6px">‹ Más</button>` + h;
   v.innerHTML = h;
   if (S.vista === "vender" && S.cart.length) cw.innerHTML = `<button id="cart" onclick="abrirCarrito()"><span>🛒 ${S.cart.reduce((a, l) => a + l.q, 0) ? cant(S.cart.reduce((a, l) => a + l.q, 0)) : 0} producto(s)</span><span style="flex:1"></span><span>${money(totalCarrito().total)} ›</span></button>`;
 }
@@ -580,6 +583,81 @@ function abrirReceta(clave, mult = 1) {
   $("#rcs").onchange = e => { LS.set("madom_costos", e.target.checked); abrirReceta(clave, mult); };
 }
 
+function vMas() {
+  const it = (ic, t, sub, go) => `<div class="card fila" data-go="${go}" style="cursor:pointer"><div style="font-size:26px">${ic}</div><div class="g"><div class="t1">${t}</div><div class="t2">${sub}</div></div><div class="suave">›</div></div>`;
+  return `<h2>Más</h2>` + it("👥", "Clientes", "Quién te debe y sus ventas", "clientes") + it("🔎", "Consultar", "Precios de productos, insumos y stock", "consultar") + it("⚙", "Ajustes", "Cuenta de Google y nombre del Excel", "ajustes");
+}
+
+/* ----- compras ----- */
+const estadoFac = f => saldoFac(f) <= 0.005 ? "Pagada" : totalPagado(f) > 0 ? "Parcial" : "Pendiente";
+const provNombre = id => ((S.data.compras.proveedores || {})[id] || {}).nombre || "—";
+const claseEst = e => e === "Pagada" ? "ok" : e === "Parcial" ? "med" : "mal";
+function cardFactura(f, hoy) {
+  const e = estadoFac(f), venc = f.vence && saldoFac(f) > 0.005 ? diasEntre(f.vence, hoy) : null;
+  const vtxt = f.vence ? "Vence " + fmtFecha(f.vence) : "Sin vencimiento";
+  return `<div class="card fila" data-f="${f.id}" style="cursor:pointer"><div class="g"><div class="t1">${esc(provNombre(f.proveedor))}</div><div class="t2">${esc(f.numero || "s/n")} · ${fmtFecha(f.fecha)}</div><div class="t2 ${venc !== null && venc < 0 ? "rojo" : ""}">${vtxt}${venc !== null && venc < 0 ? " · vencida" : ""}</div></div><div style="text-align:right"><div class="monto">${money(f.total)}</div>${e === "Parcial" ? `<div class="t2">Saldo ${money(saldoFac(f))}</div>` : ""}<span class="badge ${claseEst(e)}">${e}</span></div></div>`;
+}
+function vCompras() {
+  const c = S.data.compras, hoy = hoyISO(), fs = c.facturas || [];
+  const debo = fs.reduce((a, f) => a + Math.max(0, saldoFac(f)), 0), vencido = fs.reduce((a, f) => a + (f.vence && f.vence < hoy ? Math.max(0, saldoFac(f)) : 0), 0);
+  let h = `<h2>Compras</h2><div class="grid2"><div class="stat"><div class="l">Debo a proveedores</div><div class="n">${money(debo)}</div></div><div class="stat"><div class="l">Vencido</div><div class="n ${vencido > 0.005 ? "rojo" : ""}">${money(vencido)}</div></div></div>
+  <div class="seg">${[["pend", "Por pagar"], ["mes", "Por mes"], ["prov", "Proveedores"]].map(([k, t]) => `<button data-sc="${k}" class="${S.subC === k ? "on" : ""}">${t}</button>`).join("")}</div>`;
+  if (S.subC === "pend") {
+    const l = fs.filter(f => saldoFac(f) > 0.005).sort((a, b) => (a.vence || "9999").localeCompare(b.vence || "9999"));
+    h += l.length ? l.map(f => cardFactura(f, hoy)).join("") : `<div class="vacio">No debés nada ✔</div>`;
+  } else if (S.subC === "mes") {
+    const [a, mm] = S.mesC.split("-"), l = fs.filter(f => f.fecha.slice(0, 7) === S.mesC).sort((x, y) => y.fecha.localeCompare(x.fecha) || y.id - x.id);
+    const tot = l.reduce((s_, f) => s_ + f.total, 0), iva = l.reduce((s_, f) => s_ + (f.iva || 0), 0);
+    h += `<div class="fila"><button class="b sec" data-mesc="-1">◀</button><h3 class="g" style="text-align:center;margin:0;font-size:17px;text-transform:none;color:var(--text)">${MESES[+mm - 1]} ${a}</h3><button class="b sec" data-mesc="1">▶</button></div>
+    <div class="grid2" style="margin:10px 0"><div class="stat"><div class="l">Comprado</div><div class="n">${money(tot)}</div></div><div class="stat"><div class="l">IVA</div><div class="n">${money(iva)}</div></div></div>` +
+      (l.length ? l.map(f => cardFactura(f, hoy)).join("") : `<div class="vacio">No hay compras este mes</div>`);
+  } else {
+    const saldos = {}; for (const f of fs) { const o = saldos[f.proveedor] ||= {saldo: 0, n: 0}; o.saldo += Math.max(0, saldoFac(f)); o.n++; }
+    const l = Object.entries(c.proveedores || {}).map(([id, p]) => ({id, p, ...(saldos[id] || {saldo: 0, n: 0})})).sort((a, b) => b.saldo - a.saldo || norm(a.p.nombre).localeCompare(norm(b.p.nombre)));
+    h += l.length ? l.map(x => `<div class="card fila" data-pv="${esc(x.id)}" style="cursor:pointer"><div class="g"><div class="t1">${esc(x.p.nombre)}</div><div class="t2">${x.n} factura(s)${x.p.telefono ? " · " + esc(x.p.telefono) : ""}</div></div><div class="monto ${x.saldo > 0.005 ? "rojo" : "verde"}">${x.saldo > 0.005 ? money(x.saldo) : "Al día"}</div></div>`).join("") : `<div class="vacio">Todavía no hay proveedores</div>`;
+  }
+  return h;
+}
+function abrirProveedor(id) {
+  const p = S.data.compras.proveedores[id]; if (!p) return;
+  const hoy = hoyISO(), fs = S.data.compras.facturas.filter(f => f.proveedor === id).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const deuda = fs.reduce((a, f) => a + Math.max(0, saldoFac(f)), 0), tel = (p.telefono || "").replace(/[^\d+]/g, "");
+  const dato = (t, v) => v ? `<div class="t2" style="margin-top:4px">${t}</div><div class="t1">${v}</div>` : "";
+  abrirSheet(`<h2>${esc(p.nombre)}</h2><div class="t2">${deuda > 0.005 ? `Le debés <b class="rojo">${money(deuda)}</b>` : "Estás al día"}</div>
+  <div class="card" style="margin-top:10px">${dato("Teléfono", p.telefono ? `<a href="tel:${esc(tel)}">${esc(p.telefono)}</a>` : "")}${dato("Email", p.email ? `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>` : "")}${dato("CUIT", esc(p.cuit))}${dato("Dirección", esc(p.direccion))}${dato("Notas", esc(p.notas))}${!(p.telefono || p.email || p.cuit || p.direccion || p.notas) ? '<div class="t2">Sin datos de contacto cargados.</div>' : ""}</div>
+  ${p.telefono ? `<a href="tel:${esc(tel)}" style="text-decoration:none"><button class="b full" style="margin-bottom:10px">📞 Llamar</button></a>` : ""}
+  <h3>Facturas</h3>` + (fs.length ? fs.map(f => cardFactura(f, hoy)).join("") : `<div class="vacio">Sin facturas</div>`) + `<button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
+  $("#sheetIn").querySelectorAll("[data-f]").forEach(e => e.onclick = () => abrirFactura(+e.dataset.f));
+}
+function abrirFactura(id) {
+  const f = S.data.compras.facturas.find(x => x.id === id); if (!f) return;
+  const sd = saldoFac(f), e = estadoFac(f), neto = f.neto || (f.total - (f.iva || 0) - (f.percep || 0));
+  const items = (f.items || []).map(i => `<div class="fila" style="padding:5px 0"><div class="g"><div>${esc(i.insumo || i.desc || "—")}</div>${i.desc && i.insumo && i.desc !== i.insumo ? `<div class="t2">${esc(i.desc)}</div>` : ""}</div><div style="text-align:right"><div class="monto">${cant(i.cant)}</div><div class="t2">${money(i.precio)} c/u</div></div></div>`).join("");
+  abrirSheet(`<h2>${esc(provNombre(f.proveedor))}</h2><div class="t2">Factura ${esc(f.numero || "s/n")} · <span class="badge ${claseEst(e)}">${e}</span></div>
+  <div class="card" style="margin-top:10px"><div class="fila"><div class="g">Fecha</div><div>${fmtFecha(f.fecha)}</div></div><div class="fila"><div class="g">Vencimiento</div><div>${f.vence ? fmtFecha(f.vence) : "—"}</div></div><hr style="border:0;border-top:1px solid var(--borde)">
+  <div class="fila"><div class="g">Neto</div><div>${money(neto)}</div></div><div class="fila"><div class="g">IVA</div><div>${money(f.iva || 0)}</div></div>${f.percep ? `<div class="fila"><div class="g">Percep. IIBB</div><div>${money(f.percep)}</div></div>` : ""}
+  <div class="fila" style="margin-top:4px"><div class="g t1">Total</div><div class="monto" style="font-size:19px">${money(f.total)}</div></div>
+  <div class="t2">Pagado ${money(totalPagado(f))} · Saldo ${money(Math.max(0, sd))}</div></div>
+  ${items ? `<h3>Productos</h3><div class="card">${items}</div>` : ""}${f.notas ? `<div class="t2" style="margin-bottom:10px">Notas: ${esc(f.notas)}</div>` : ""}
+  ${(f.pagos || []).length ? `<h3>Pagos</h3>` + f.pagos.map(p => `<div class="fila" style="padding:3px 0"><div class="g">${fmtFecha(p.fecha)} ${p.nota ? "· " + esc(p.nota) : ""}</div><div class="monto">${money(p.monto)}</div></div>`).join("") : ""}
+  ${sd > 0.005 ? `<label>Pagar ahora</label><input id="pm" inputmode="decimal" value="${m(sd)}"><label>Fecha</label><input id="pf" type="date" value="${hoyISO()}"><label>Nota (opcional)</label><input id="pn"><div style="height:12px"></div><button class="b full" id="pg">Registrar pago</button><div style="height:8px"></div>`
+    : `<div style="height:8px"></div><button class="b peli full" id="pp">Marcar como pendiente</button><div style="height:8px"></div>`}
+  <button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
+  if (sd > 0.005) $("#pg").onclick = async () => {
+    const monto = num($("#pm").value), fecha = $("#pf").value;
+    if (!(monto > 0)) return toast("Escribe un monto válido");
+    if (monto > sd + 0.005) return toast("El monto supera el saldo (" + money(sd) + ")");
+    if (!fecha) return toast("Elige la fecha");
+    const b = $("#pg"); b.disabled = true; b.textContent = "Guardando…";
+    try { await mutarCompras(base => { const x = base.facturas.find(y => y.id === id); if (!x) throw new Error("Esa factura ya no existe."); (x.pagos ||= []).push({fecha, monto: r2(monto), nota: $("#pn").value.trim() || (monto >= sd - 0.005 ? "Pago total" : "")}); }); cerrarSheet(); pintar(); toast("Pago registrado"); }
+    catch (er) { b.disabled = false; b.textContent = "Registrar pago"; errorEscritura(er); }
+  };
+  else $("#pp").onclick = async () => {
+    if (!confirm(`Esta factura figura pagada (${money(totalPagado(f))}).\n\n¿Dejarla como pendiente? Se quitan los pagos registrados y vuelve a contar en lo que debés.`)) return;
+    try { await mutarCompras(base => { const x = base.facturas.find(y => y.id === id); if (!x) throw new Error("Esa factura ya no existe."); x.pagos = []; }); cerrarSheet(); pintar(); toast("Factura marcada como pendiente"); } catch (er) { errorEscritura(er); }
+  };
+}
+
 function vClientes() {
   const por = {};
   for (const v of S.data.ventas.ventas) { const n = nombreCli(v), c = por[n] ||= {n, total: 0, saldo: 0, cant: 0}; c.total += v.total; c.saldo += Math.max(0, saldoVenta(v)); c.cant++; }
@@ -625,16 +703,21 @@ function abrirAjustes() {
 
 /* ---------- eventos ---------- */
 document.addEventListener("click", e => {
-  const t = e.target.closest("button,[data-v],[data-c],[data-p],[data-r]"); if (!t) return;
+  const t = e.target.closest("button,[data-v],[data-c],[data-p],[data-r],[data-f],[data-pv],[data-go]"); if (!t) return;
   if (t.closest("nav") && t.dataset.v) { S.vista = t.dataset.v; S.busca = ""; S.catRec = "Todas"; scrollTo(0, 0); return pintar(); }
   if (t.closest("#sheet")) return;
   if (t.dataset.mes) { const [a, mm] = S.mes.split("-").map(Number), d = new Date(a, mm - 1 + Number(t.dataset.mes), 1); S.mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; return pintar(); }
+  if (t.dataset.sc) { S.subC = t.dataset.sc; return pintar(); }
+  if (t.dataset.mesc) { const [a, mm] = S.mesC.split("-").map(Number), d = new Date(a, mm - 1 + Number(t.dataset.mesc), 1); S.mesC = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; return pintar(); }
+  if (t.dataset.go) { if (t.dataset.go === "ajustes") return abrirAjustes(); S.vista = t.dataset.go; S.busca = ""; scrollTo(0, 0); return pintar(); }
   if (t.dataset.k) { S.consulta = t.dataset.k; S.busca = ""; return pintar(); }
   if (t.closest("#vista")) {
     const fila = e.target.closest("[data-p]"); if (fila) return agregarAlCarrito(fila.dataset.p);
     const cv = e.target.closest("[data-v]"); if (cv) return abrirVenta(+cv.dataset.v);
     const cc = e.target.closest("[data-c]"); if (cc) return abrirCliente(cc.dataset.c);
     const rc = e.target.closest("[data-r]"); if (rc) return abrirReceta(rc.dataset.r);
+    const cf = e.target.closest("[data-f]"); if (cf) return abrirFactura(+cf.dataset.f);
+    const cp = e.target.closest("[data-pv]"); if (cp) return abrirProveedor(cp.dataset.pv);
   }
 });
 $("#vista").addEventListener("input", e => {
