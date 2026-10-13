@@ -20,7 +20,7 @@ PASO 2 · Publicar esta app (una vez, gratis)
 1. Crea una cuenta en github.com (si no tienes).
 2. Arriba a la derecha: «+» > «New repository». Nombre: madom. Déjalo en «Public». Crear.
 3. Toca «uploading an existing file» y arrastra TODO lo que hay en esta carpeta
-   (index.html, sw.js, manifest.webmanifest y los .png). Toca «Commit changes».
+   (index.html, sw.js, manifest.webmanifest y todos los .png). Toca «Commit changes».
 4. Ve a Settings > Pages. En «Branch» elige main y la carpeta / (root). Guardar.
 5. En un minuto aparece tu dirección: https://TUUSUARIO.github.io/madom/
    (Es pública, pero sin tu cuenta de Google no muestra nada de tus datos.
