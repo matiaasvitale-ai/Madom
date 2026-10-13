@@ -47,7 +47,7 @@ label{display:block;font-size:12px;font-weight:700;color:var(--suave);margin:12p
 .seg button{flex:1;border:0;background:transparent;color:var(--text);font:inherit;font-weight:700;padding:10px 4px;border-radius:9px}
 .seg button.on{background:var(--acc);color:var(--acc-t)}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--borde);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;border:0;background:transparent;color:var(--suave);font:inherit;font-size:11px;font-weight:700;padding:8px 0 9px}
+nav button{flex:1;min-width:0;border:0;background:transparent;color:var(--suave);font:inherit;font-size:11px;font-weight:700;padding:8px 0 9px}
 nav button span{display:block;font-size:21px;line-height:1.1}
 nav button.on{color:var(--text)}
 .badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;border:1px solid var(--borde)}
@@ -93,6 +93,8 @@ const SCOPE = "https://www.googleapis.com/auth/drive";
 const API = "https://www.googleapis.com/drive/v3";
 const UP = "https://www.googleapis.com/upload/drive/v3";
 const HOJA_INS = "Lista de insumos", HOJA_PROD = "Lista de productos", FILA_INS = 60;
+const HOJAS_REC = ["Rellenos", "Bombones Linea premium", "Bombones linea licor", "Bombones linea bariloche", "Tabletas", "Grageas", "Pascuas", "TORTAS", "PEDIDOS"];
+const CATEGORIAS = {"Rellenos": ["Rellenos"], "Bombones": ["Bombones Linea premium", "Bombones linea licor", "Bombones linea bariloche"], "Tabletas": ["Tabletas"], "Alfajores": ["TORTAS"], "Grageas": ["Grageas"], "Pascuas": ["Pascuas"], "Tortas y postres": ["TORTAS"], "Pedidos": ["PEDIDOS"]};
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 /* ---------- utilidades ---------- */
@@ -120,7 +122,7 @@ const S = {
   token: LS.get("madom_tok", null),
   data: LS.get("madom_cache", null),      // {prods, secs, insumos, ventas, compras, stock, xlsxMod, cuando}
   offline: false, vista: "inicio", mes: hoyISO().slice(0, 7), consulta: "productos", cart: LS.get("madom_cart", []),
-  busca: "", seccion: "Todas", cargando: false, candidatos: null, error: "", respaldado: false,
+  busca: "", seccion: "Todas", catRec: "Todas", cargando: false, candidatos: null, error: "", respaldado: false,
 };
 const guardarCfg = () => LS.set("madom_cfg", S.cfg);
 const guardarCache = () => { try { localStorage.setItem("madom_cache", JSON.stringify(S.data)); } catch {} };
@@ -163,7 +165,7 @@ async function leerXlsx(buf) {
   for (const sh of wb.getElementsByTagName("sheet")) {
     const nombre = sh.getAttribute("name"), rid = sh.getAttribute("r:id") || sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
     let t = dest[rid]; t = t.startsWith("/") ? t.slice(1) : "xl/" + t;
-    if (nombre !== HOJA_INS && nombre !== HOJA_PROD) continue;
+    if (nombre !== HOJA_INS && nombre !== HOJA_PROD && !HOJAS_REC.includes(nombre)) continue;
     const filas = new Map();
     for (const c of xml(await zip.leer(t)).getElementsByTagName("c")) {
       const ref = c.getAttribute("r"), tipo = c.getAttribute("t"), ve = c.getElementsByTagName("v")[0];
@@ -198,7 +200,43 @@ function parsearExcel(hojas) {
       prods.push({nombre: nom, costo, base, iva, total, seccion: sec});
     } else { sec = nombre; if (!secs.includes(sec)) secs.push(sec); }
   }
-  return {prods, insumos: ins, secs: secs.filter(s => prods.some(p => p.seccion === s))};
+  const recetas = [], nv = v => typeof v === "number" ? v : 0;
+  for (const hoja of HOJAS_REC) {
+    const h = hojas[hoja]; if (!h) continue;
+    const filasN = [...h.keys()].sort((a, b) => a - b), max = filasN[filasN.length - 1] || 0, usados = new Set();
+    for (let r = 2; r <= max; r++) {
+      if (txt((h.get(r) || {})[1]).toLowerCase() !== "ingredientes") continue;
+      const titulo = txt((h.get(r - 1) || {})[1]); if (!titulo) continue;
+      const filas = [];
+      for (let rr = r + 1; rr <= max; rr++) {
+        const c = h.get(rr) || {}, t = txt(c[1]).toLowerCase();
+        if (t === "total" || t === "ingredientes") break;
+        if (txt(c[1]) && typeof c[2] === "number" && c[2]) filas.push({n: txt(c[1]), c: c[2], u: txt(c[3]), p: nv(c[6]), costo: nv(c[7])});
+      }
+      let nombre = titulo, n = 2; while (usados.has(nombre)) nombre = `${titulo} (${n++})`; usados.add(nombre);
+      const [kg, excl] = pesoKg(filas);
+      recetas.push({hoja, nombre, filas, costo: filas.reduce((a, f) => a + f.costo, 0), kg, excl});
+    }
+  }
+  return {prods, insumos: ins, secs: secs.filter(s => prods.some(p => p.seccion === s)), recetas};
+}
+function pesoKg(filas) {
+  let tot = 0, excl = 0;
+  for (const f of filas) {
+    const u = f.u.trim().toLowerCase();
+    if (["kg", "kgs", "kilo", "kilos", "lt", "l", "litro", "litros"].includes(u)) tot += f.c;
+    else if (["g", "gr", "grs", "gramo", "gramos"].includes(u)) tot += f.c / 1000;
+    else if (["ml", "cc"].includes(u) && f.c >= 1) tot += f.c / 1000;
+    else if (f.c < 1) tot += f.c; else excl++;
+  }
+  return [tot, excl];
+}
+const fmtPeso = kg => kg <= 0 ? "—" : kg < 1 ? cant(kg * 1000) + " g" : cant(kg) + " kg";
+function categoriaDe(r, over) {
+  const el = over[`${r.hoja}|${r.nombre}`]; if (el in CATEGORIAS) return el;
+  if (r.hoja === "TORTAS") return norm(r.nombre).includes("alfajor") ? "Alfajores" : "Tortas y postres";
+  for (const [c, hs] of Object.entries(CATEGORIAS)) if (hs.includes(r.hoja) && c !== "Alfajores" && c !== "Tortas y postres") return c;
+  return r.hoja;
 }
 
 /* ---------- Google: ingreso y llamadas a Drive ---------- */
@@ -245,9 +283,13 @@ async function escribirJSON(id, nombre, datos) {
 async function ubicarArchivos(eleccion) {
   let ex = eleccion;
   if (!ex) {
-    const hall = await listar(`name='${S.cfg.excel.replace(/'/g, "\\'")}' and trashed=false`);
-    if (!hall.length) throw new Error(`No encontré «${S.cfg.excel}» en tu Drive. Revisa el nombre en Ajustes y que la carpeta esté sincronizada.`);
-    if (hall.length > 1) {
+    let hall = await listar(`name='${S.cfg.excel.replace(/'/g, "\\'")}' and trashed=false`), parecidos = false;
+    if (!hall.length) {                      // no existe con ese nombre exacto: buscar Excel parecidos
+      const base = S.cfg.excel.replace(/\.(xlsx|xlsm)$/i, "").replace(/'/g, "\\'");
+      hall = (await listar(`name contains '${base}' and trashed=false`)).filter(h => /\.(xlsx|xlsm)$/i.test(h.name)); parecidos = true;
+    }
+    if (!hall.length) throw new Error(`No encontré «${S.cfg.excel}» en tu Drive. Revisa el nombre en Ajustes y que sea un Excel (.xlsx) dentro de la carpeta sincronizada.`);
+    if (hall.length > 1 || parecidos) {
       for (const h of hall) { try { const p = await (await api(`${API}/files/${h.parents[0]}?fields=name&supportsAllDrives=true`)).json(); h.carpeta = p.name; } catch { h.carpeta = "?"; } }
       S.candidatos = hall; return false;
     }
@@ -257,7 +299,7 @@ async function ubicarArchivos(eleccion) {
   S.cfg.folderId = ex.parents[0];
   const arch = await listar(`'${S.cfg.folderId}' in parents and trashed=false`);
   const f = n => (arch.find(a => a.name === n) || {}).id || null;
-  S.cfg.ids = {xlsx: ex.id, ventas: f("ventas_madom.json"), compras: f("compras_madom.json"), stock: f("stock_madom.json")};
+  S.cfg.ids = {xlsx: ex.id, ventas: f("ventas_madom.json"), compras: f("compras_madom.json"), stock: f("stock_madom.json"), cats: f("categorias_madom.json")};
   guardarCfg();
   return true;
 }
@@ -273,14 +315,14 @@ async function sincronizar(manual) {
     try { meta = await (await api(`${API}/files/${S.cfg.ids.xlsx}?fields=modifiedTime&supportsAllDrives=true`)).json(); }
     catch (e) { if (e.status === 404) { S.cfg.ids = {}; guardarCfg(); const ok = await ubicarArchivos(); if (!ok) return; meta = await (await api(`${API}/files/${S.cfg.ids.xlsx}?fields=modifiedTime&supportsAllDrives=true`)).json(); } else throw e; }
     const d = S.data || {};
-    let xl = {prods: d.prods, secs: d.secs, insumos: d.insumos};
-    if (!d.prods || d.xlsxMod !== meta.modifiedTime) {
+    let xl = {prods: d.prods, secs: d.secs, insumos: d.insumos, recetas: d.recetas};
+    if (!d.prods || !d.recetas || d.xlsxMod !== meta.modifiedTime) {
       const buf = await (await api(`${API}/files/${S.cfg.ids.xlsx}?alt=media&supportsAllDrives=true`)).arrayBuffer();
       xl = parsearExcel(await leerXlsx(buf));
     }
-    const [ventas, compras, stock] = await Promise.all([
-      leerJSON(S.cfg.ids.ventas, VACIO.ventas), leerJSON(S.cfg.ids.compras, VACIO.compras), leerJSON(S.cfg.ids.stock, VACIO.stock)]);
-    S.data = {...xl, ventas, compras, stock, xlsxMod: meta.modifiedTime, cuando: Date.now()};
+    const [ventas, compras, stock, cats] = await Promise.all([
+      leerJSON(S.cfg.ids.ventas, VACIO.ventas), leerJSON(S.cfg.ids.compras, VACIO.compras), leerJSON(S.cfg.ids.stock, VACIO.stock), leerJSON(S.cfg.ids.cats, {})]);
+    S.data = {...xl, ventas, compras, stock, cats, xlsxMod: meta.modifiedTime, cuando: Date.now()};
     guardarCache(); S.offline = false;
     if (manual) toast("Datos actualizados");
   } catch (e) {
@@ -352,7 +394,7 @@ function alertas() {
 }
 
 /* ---------- pantallas ---------- */
-const TABS = [["inicio", "🏠", "Inicio"], ["vender", "🛒", "Vender"], ["ventas", "🧾", "Ventas"], ["clientes", "👥", "Clientes"], ["consultar", "🔎", "Consultar"]];
+const TABS = [["inicio", "🏠", "Inicio"], ["vender", "🛒", "Vender"], ["ventas", "🧾", "Ventas"], ["recetas", "📖", "Recetas"], ["clientes", "👥", "Clientes"], ["consultar", "🔎", "Consultar"]];
 function pintarNav() { $("#nav").innerHTML = TABS.map(([k, i, t]) => `<button data-v="${k}" class="${S.vista === k ? "on" : ""}"><span>${i}</span>${t}</button>`).join(""); }
 function pintarEstado() {
   const e = $("#est");
@@ -370,7 +412,7 @@ function pintar() {
   let h = "";
   if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
   if (S.offline) h += `<div class="aviso">Sin conexión: ves los últimos datos guardados. Para registrar ventas hace falta internet.</div>`;
-  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, clientes: vClientes, consultar: vConsultar})[S.vista]();
+  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, recetas: vRecetas, clientes: vClientes, consultar: vConsultar})[S.vista]();
   v.innerHTML = h;
   if (S.vista === "vender" && S.cart.length) cw.innerHTML = `<button id="cart" onclick="abrirCarrito()"><span>🛒 ${S.cart.reduce((a, l) => a + l.q, 0) ? cant(S.cart.reduce((a, l) => a + l.q, 0)) : 0} producto(s)</span><span style="flex:1"></span><span>${money(totalCarrito().total)} ›</span></button>`;
 }
@@ -395,9 +437,9 @@ function pantallaInicioSesion(v, primera) {
   };
 }
 function pantallaElegirExcel(v) {
-  v.innerHTML = `<h2>Hay varios «${esc(S.cfg.excel)}»</h2><div class="suave" style="margin-bottom:10px">Elige el que usa tu app de la PC:</div>` +
-    S.candidatos.map((h, i) => `<button class="card b sec full" style="text-align:left" data-e="${i}"><div class="t1">Carpeta: ${esc(h.carpeta)}</div><div class="t2">Modificado ${esc(new Date(h.modifiedTime).toLocaleString("es-AR"))}</div></button>`).join("");
-  v.querySelectorAll("[data-e]").forEach(b => b.onclick = async () => { const h = S.candidatos[+b.dataset.e]; await ubicarArchivos(h); sincronizar(true); });
+  v.innerHTML = `<h2>${S.candidatos.length > 1 ? "Elige tu Excel" : "¿Es este tu Excel?"}</h2><div class="suave" style="margin-bottom:10px">No encontré «${esc(S.cfg.excel)}» exacto. Elige el que usa tu app de la PC:</div>` +
+    S.candidatos.map((h, i) => `<button class="card b sec full" style="text-align:left" data-e="${i}"><div class="t1">${esc(h.name)}</div><div class="t2">Carpeta: ${esc(h.carpeta)}</div><div class="t2">Modificado ${esc(new Date(h.modifiedTime).toLocaleString("es-AR"))}</div></button>`).join("");
+  v.querySelectorAll("[data-e]").forEach(b => b.onclick = async () => { const h = S.candidatos[+b.dataset.e]; S.cfg.excel = h.name; await ubicarArchivos(h); sincronizar(true); });
 }
 
 function vInicio() {
@@ -505,6 +547,31 @@ function abrirVenta(id) {
   };
 }
 
+function vRecetas() {
+  const d = S.data, over = d.cats || {}, qn = norm(S.busca), cat = S.catRec || "Todas";
+  const todas = (d.recetas || []).map(r => ({...r, cat: categoriaDe(r, over)}));
+  const orden = Object.keys(CATEGORIAS), cats = [...new Set(todas.map(r => r.cat))].sort((a, b) => (orden.indexOf(a) + 100 * (orden.indexOf(a) < 0)) - (orden.indexOf(b) + 100 * (orden.indexOf(b) < 0)));
+  const l = todas.filter(r => (cat === "Todas" || r.cat === cat) && (!qn || norm(r.nombre).includes(qn)));
+  return `<h2>Recetas</h2><input id="bus" type="search" placeholder="Buscar receta…" value="${esc(S.busca)}" autocomplete="off"><div style="height:8px"></div>
+  <select id="catSel"><option>Todas</option>${cats.map(c => `<option ${c === cat ? "selected" : ""}>${esc(c)}</option>`).join("")}</select><div style="height:10px"></div>` +
+    (l.length ? l.map(r => `<div class="card fila" data-r="${esc(r.hoja + "|" + r.nombre)}" style="cursor:pointer"><div class="g"><div class="t1">${esc(r.nombre)}</div><div class="t2">${esc(r.cat)} · ${r.filas.length} ingrediente(s) · ${fmtPeso(r.kg)}</div></div><div class="monto">${money(r.costo)}</div></div>`).join("") : `<div class="vacio">${todas.length ? "Sin resultados" : "No encontré recetas en el Excel"}</div>`);
+}
+function abrirReceta(clave, mult = 1) {
+  const [hoja, ...rest] = clave.split("|"), nombre = rest.join("|"), r = S.data.recetas.find(x => x.hoja === hoja && x.nombre === nombre); if (!r) return;
+  const fmtQ = f => { const q = f.c * mult, u = f.u.toLowerCase(); return cant(q) + (f.u ? " " + esc(f.u) : "") + ((u === "kg" || u === "kgs") && q < 1 ? ` <span class="suave">(${cant(q * 1000)} g)</span>` : ""); };
+  const tot = r.costo * mult, preset = [1, 2, 3, 5, 10];
+  abrirSheet(`<h2>${esc(r.nombre)}</h2><div class="t2">${esc(r.hoja)}</div>
+  <label>Multiplicador</label><div class="seg" id="rm">${preset.map(x => `<button data-x="${x}" class="${mult === x ? "on" : ""}">×${x}</button>`).join("")}</div>
+  <input id="rmx" inputmode="decimal" placeholder="Otro multiplicador (ej. 0,5 o 2,5)" value="${preset.includes(mult) ? "" : cant(mult)}">
+  <div class="card" style="margin-top:12px">${r.filas.map(f => `<div class="fila" style="padding:5px 0"><div class="g"><div>${esc(f.n)}</div><div class="t2">${fmtQ(f)}</div></div><div class="monto">${money(f.costo * mult)}</div></div>`).join("")}
+  <hr style="border:0;border-top:1px solid var(--borde)"><div class="fila"><div class="g t1">Costo total</div><div class="monto" style="font-size:18px">${money(tot)}</div></div>
+  <div class="t2">Peso aprox. ${fmtPeso(r.kg * mult)}${r.excl ? ` · ${r.excl} ingrediente(s) sin sumar (cajas, piezas, etc.)` : ""}</div></div>
+  <button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
+  const sh = $("#sheetIn");
+  sh.querySelectorAll("#rm button").forEach(b => b.onclick = () => abrirReceta(clave, +b.dataset.x));
+  $("#rmx").onchange = e => { const n = num(e.target.value); abrirReceta(clave, n > 0 ? n : 1); };
+}
+
 function vClientes() {
   const por = {};
   for (const v of S.data.ventas.ventas) { const n = nombreCli(v), c = por[n] ||= {n, total: 0, saldo: 0, cant: 0}; c.total += v.total; c.saldo += Math.max(0, saldoVenta(v)); c.cant++; }
@@ -550,8 +617,8 @@ function abrirAjustes() {
 
 /* ---------- eventos ---------- */
 document.addEventListener("click", e => {
-  const t = e.target.closest("button,[data-v],[data-c],[data-p]"); if (!t) return;
-  if (t.closest("nav") && t.dataset.v) { S.vista = t.dataset.v; S.busca = ""; scrollTo(0, 0); return pintar(); }
+  const t = e.target.closest("button,[data-v],[data-c],[data-p],[data-r]"); if (!t) return;
+  if (t.closest("nav") && t.dataset.v) { S.vista = t.dataset.v; S.busca = ""; S.catRec = "Todas"; scrollTo(0, 0); return pintar(); }
   if (t.closest("#sheet")) return;
   if (t.dataset.mes) { const [a, mm] = S.mes.split("-").map(Number), d = new Date(a, mm - 1 + Number(t.dataset.mes), 1); S.mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; return pintar(); }
   if (t.dataset.k) { S.consulta = t.dataset.k; S.busca = ""; return pintar(); }
@@ -559,12 +626,13 @@ document.addEventListener("click", e => {
     const fila = e.target.closest("[data-p]"); if (fila) return agregarAlCarrito(fila.dataset.p);
     const cv = e.target.closest("[data-v]"); if (cv) return abrirVenta(+cv.dataset.v);
     const cc = e.target.closest("[data-c]"); if (cc) return abrirCliente(cc.dataset.c);
+    const rc = e.target.closest("[data-r]"); if (rc) return abrirReceta(rc.dataset.r);
   }
 });
 $("#vista").addEventListener("input", e => {
   if (e.target.id === "bus") { S.busca = e.target.value; const pos = e.target.selectionStart; pintar(); const n = $("#bus"); n.focus(); n.setSelectionRange(pos, pos); }
 });
-$("#vista").addEventListener("change", e => { if (e.target.id === "secSel") { S.seccion = e.target.value; pintar(); } });
+$("#vista").addEventListener("change", e => { if (e.target.id === "secSel") { S.seccion = e.target.value; pintar(); } if (e.target.id === "catSel") { S.catRec = e.target.value; pintar(); } });
 $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") cerrarSheet(); });
 $("#bSync").onclick = () => sincronizar(true);
 $("#bAjustes").onclick = abrirAjustes;

@@ -4,7 +4,8 @@ MADOM · app del celular (web instalable)
 Qué hace
 - Lee tu Excel y los datos de la app de la PC desde tu Google Drive.
 - Desde el celular podés: registrar ventas (cobradas o a cobrar), registrar cobros,
-  ver clientes y deudas, consultar precios, costos, ganancia y stock, y ver las alertas.
+  ver clientes y deudas, consultar recetas (con multiplicador, costo y peso), precios, costos,
+  ganancia y stock, y ver las alertas.
 - Las ventas se guardan en ventas_madom.json, en la misma carpeta de Drive del Excel.
   La app de la PC las toma sola a los pocos segundos.
 - No modifica tu Excel. Recetas, insumos, compras y facturas se siguen manejando en la PC.
