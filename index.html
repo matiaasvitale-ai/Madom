@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MADOM</title>
+<meta name="theme-color" content="#26211e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--text:#26211e;--suave:#7a716a;--acc:#26211e;--acc-t:#fff;--verde:#1e7a4a;--rojo:#b3261e;--ambar:#9a6700;--borde:#e3ddd5;--campo:#faf8f5;--logo-inv:0}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1916;--card:#26221f;--text:#f1ece6;--suave:#a39a91;--acc:#f1ece6;--acc-t:#1c1916;--verde:#5fcf94;--rojo:#ff8a80;--ambar:#e6b84d;--borde:#3a352f;--campo:#1f1b18;--logo-inv:1}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:500 16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 8px;border-bottom:1px solid var(--borde)}
+header img{height:26px;filter:invert(var(--logo-inv))}
+header .sp{flex:1}
+header .est{font-size:12px;color:var(--suave);text-align:right}
+.ib{border:0;background:transparent;color:var(--text);font-size:22px;padding:6px 8px;border-radius:10px}
+.ib:active{background:var(--borde)}
+main{padding:12px 16px;max-width:760px;margin:0 auto}
+h2{font-size:20px;margin:6px 0 10px;font-weight:700}
+h3{font-size:14px;margin:16px 0 6px;color:var(--suave);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--borde);border-radius:16px;padding:14px;margin-bottom:10px}
+.fila{display:flex;align-items:center;gap:10px}
+.fila .g{flex:1;min-width:0}
+.t1{font-weight:700;overflow-wrap:anywhere}
+.t2{font-size:13px;color:var(--suave);overflow-wrap:anywhere}
+.monto{font-weight:700;white-space:nowrap}
+.verde{color:var(--verde)}.rojo{color:var(--rojo)}.ambar{color:var(--ambar)}.suave{color:var(--suave)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--card);border:1px solid var(--borde);border-radius:16px;padding:12px}
+.stat .n{font-size:20px;font-weight:800;margin-top:2px;overflow-wrap:anywhere}
+.stat .l{font-size:12px;color:var(--suave);font-weight:700}
+button.b{border:0;background:var(--acc);color:var(--acc-t);font:inherit;font-weight:700;border-radius:12px;padding:12px 16px;min-height:46px}
+button.b.sec{background:transparent;color:var(--text);border:1px solid var(--borde)}
+button.b.peli{background:transparent;color:var(--rojo);border:1px solid var(--borde)}
+button.b:disabled{opacity:.5}
+button.b.full{width:100%}
+input,select,textarea{width:100%;font:inherit;font-weight:500;color:var(--text);background:var(--campo);border:1px solid var(--borde);border-radius:12px;padding:12px;min-height:46px}
+label{display:block;font-size:12px;font-weight:700;color:var(--suave);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.03em}
+.seg{display:flex;background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:3px;gap:3px;margin:6px 0 10px}
+.seg button{flex:1;border:0;background:transparent;color:var(--text);font:inherit;font-weight:700;padding:10px 4px;border-radius:9px}
+.seg button.on{background:var(--acc);color:var(--acc-t)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--borde);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:transparent;color:var(--suave);font:inherit;font-size:11px;font-weight:700;padding:8px 0 9px}
+nav button span{display:block;font-size:21px;line-height:1.1}
+nav button.on{color:var(--text)}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;border:1px solid var(--borde)}
+.badge.ok{color:var(--verde)}.badge.mal{color:var(--rojo)}.badge.med{color:var(--ambar)}
+#cart{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:5;background:var(--acc);color:var(--acc-t);border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.25);border:0;width:calc(100% - 24px);font-family:inherit;font-size:16px}
+#sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center}
+#sheet.on{display:flex}
+#sheet .in{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));background:var(--acc);color:var(--acc-t);padding:10px 16px;border-radius:99px;font-weight:700;z-index:30;display:none;max-width:90%;text-align:center}
+.aviso{background:var(--card);border:1px solid var(--ambar);color:var(--ambar);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:14px;font-weight:700}
+.q{display:flex;align-items:center;gap:6px}
+.q button{width:38px;height:38px;border-radius:10px;border:1px solid var(--borde);background:var(--card);color:var(--text);font-size:20px;font-weight:800}
+.q input{width:64px;text-align:center;padding:6px}
+.lista .item{padding:12px 4px;border-bottom:1px solid var(--borde)}
+.vacio{text-align:center;color:var(--suave);padding:30px 10px}
+details{margin-top:10px}summary{font-weight:700;padding:8px 0}
+ol{padding-left:20px}li{margin:6px 0}
+a{color:var(--text)}
+</style>
+</head>
+<body>
+<header>
+  <b style="font-size:20px;letter-spacing:.14em">MADOM</b>
+  <div class="sp"></div>
+  <div class="est" id="est"></div>
+  <button class="ib" id="bSync" aria-label="Actualizar">⟳</button>
+  <button class="ib" id="bAjustes" aria-label="Ajustes">⚙</button>
+</header>
+<main id="vista"></main>
+<div id="cartWrap"></div>
+<nav id="nav"></nav>
+<div id="sheet"><div class="in" id="sheetIn"></div></div>
+<div id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+"use strict";
+/* =====================================================================
+   MADOM · app del celular. Lee el Excel y los datos de la app de la PC desde
+   Google Drive y guarda las ventas y cobros en ventas_madom.json (misma carpeta).
+   ===================================================================== */
+const SCOPE = "https://www.googleapis.com/auth/drive";
+const API = "https://www.googleapis.com/drive/v3";
+const UP = "https://www.googleapis.com/upload/drive/v3";
+const HOJA_INS = "Lista de insumos", HOJA_PROD = "Lista de productos", FILA_INS = 60;
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const m = x => (Number(x) || 0).toLocaleString("es-AR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const money = x => "$ " + m(x);
+const cant = x => { let s = (Math.round(Number(x) * 10000) / 10000).toString().replace(".", ","); return s; };
+const norm = t => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const num = t => { t = String(t ?? "").trim().replace(/[$\s]/g, ""); if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t = t.replace(/\./g, "").replace(",", "."); else t = t.replace(",", "."); const n = parseFloat(t); return isFinite(n) ? n : NaN; };
+const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const fmtFecha = iso => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : "";
+const diasEntre = (a, b) => Math.round((Date.parse(a + "T00:00:00Z") - Date.parse(b + "T00:00:00Z")) / 864e5);
+const r2 = x => Math.round(x * 100) / 100;
+const LS = {
+  get(k, def) { try { const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch { return def; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let toastT;
+function toast(t) { const e = $("#toast"); e.textContent = t; e.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => e.style.display = "none", 3200); }
+
+/* ---------- estado ---------- */
+const S = {
+  cfg: LS.get("madom_cfg", {clientId: "", excel: "recetas.xlsx", folderId: "", ids: {}}),
+  token: LS.get("madom_tok", null),
+  data: LS.get("madom_cache", null),      // {prods, secs, insumos, ventas, compras, stock, xlsxMod, cuando}
+  offline: false, vista: "inicio", mes: hoyISO().slice(0, 7), consulta: "productos", cart: LS.get("madom_cart", []),
+  busca: "", seccion: "Todas", cargando: false, candidatos: null, error: "", respaldado: false,
+};
+const guardarCfg = () => LS.set("madom_cfg", S.cfg);
+const guardarCache = () => { try { localStorage.setItem("madom_cache", JSON.stringify(S.data)); } catch {} };
+
+/* ---------- lector mínimo de .xlsx (sin librerías) ---------- */
+async function inflar(bytes) {
+  const s = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+async function leerZip(buf) {
+  const v = new DataView(buf), u8 = new Uint8Array(buf);
+  let e = u8.length - 22;
+  while (e >= 0 && v.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error("El archivo no es un Excel válido");
+  const n = v.getUint16(e + 10, true); let p = v.getUint32(e + 16, true);
+  const out = {}, dec = new TextDecoder();
+  for (let i = 0; i < n; i++) {
+    const metodo = v.getUint16(p + 10, true), comp = v.getUint32(p + 20, true);
+    const nl = v.getUint16(p + 28, true), el = v.getUint16(p + 30, true), cl = v.getUint16(p + 32, true), lo = v.getUint32(p + 42, true);
+    const nombre = dec.decode(u8.subarray(p + 46, p + 46 + nl));
+    const ln = v.getUint16(lo + 26, true), le = v.getUint16(lo + 28, true), ini = lo + 30 + ln + le;
+    const datos = u8.subarray(ini, ini + comp);
+    out[nombre] = {metodo, datos};
+    p += 46 + nl + el + cl;
+  }
+  out.leer = async nombre => { const f = out[nombre]; if (!f) return null; const b = f.metodo === 0 ? f.datos : await inflar(f.datos); return dec.decode(b); };
+  return out;
+}
+const xml = t => new DOMParser().parseFromString(t, "application/xml");
+const colNum = ref => { let c = 0; for (const ch of ref.replace(/\d+/g, "")) c = c * 26 + ch.charCodeAt(0) - 64; return c; };
+async function leerXlsx(buf) {
+  const zip = await leerZip(buf);
+  const ss = [], tss = await zip.leer("xl/sharedStrings.xml");
+  if (tss) for (const si of xml(tss).getElementsByTagName("si")) {
+    let s = ""; for (const t of si.getElementsByTagName("t")) { if (t.parentNode.nodeName !== "rPh") s += t.textContent; } ss.push(s);
+  }
+  const wb = xml(await zip.leer("xl/workbook.xml")), rels = xml(await zip.leer("xl/_rels/workbook.xml.rels"));
+  const dest = {}; for (const r of rels.getElementsByTagName("Relationship")) dest[r.getAttribute("Id")] = r.getAttribute("Target");
+  const hojas = {};
+  for (const sh of wb.getElementsByTagName("sheet")) {
+    const nombre = sh.getAttribute("name"), rid = sh.getAttribute("r:id") || sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+    let t = dest[rid]; t = t.startsWith("/") ? t.slice(1) : "xl/" + t;
+    if (nombre !== HOJA_INS && nombre !== HOJA_PROD) continue;
+    const filas = new Map();
+    for (const c of xml(await zip.leer(t)).getElementsByTagName("c")) {
+      const ref = c.getAttribute("r"), tipo = c.getAttribute("t"), ve = c.getElementsByTagName("v")[0];
+      let val = null;
+      if (tipo === "inlineStr") { val = [...c.getElementsByTagName("t")].map(x => x.textContent).join(""); }
+      else if (ve) {
+        const raw = ve.textContent;
+        if (tipo === "s") val = ss[parseInt(raw)]; else if (tipo === "str") val = raw; else if (tipo === "b" || tipo === "e") val = null; else { const n = parseFloat(raw); val = isFinite(n) ? n : null; }
+      }
+      if (val === null) continue;
+      const fila = parseInt(ref.replace(/\D/g, "")); if (!filas.has(fila)) filas.set(fila, {});
+      filas.get(fila)[colNum(ref)] = val;
+    }
+    hojas[nombre] = filas;
+  }
+  return hojas;
+}
+const txt = v => typeof v === "string" ? v.trim() : "";
+function parsearExcel(hojas) {
+  const ins = [], hi = hojas[HOJA_INS] || new Map();
+  for (const f of [...hi.keys()].sort((a, b) => a - b)) {
+    if (f < FILA_INS) continue; const c = hi.get(f), nombre = txt(c[1]);
+    if (nombre && typeof c[4] === "number") ins.push({nombre, precio: c[4]});
+  }
+  const prods = [], secs = ["Bombones y cajas"], hp = hojas[HOJA_PROD] || new Map(), usados = new Set();
+  let sec = "Bombones y cajas";
+  for (const f of [...hp.keys()].sort((a, b) => a - b)) {
+    if (f < 2) continue; const c = hp.get(f), nombre = txt(c[1]); if (!nombre) continue;
+    const [costo, base, iva, total] = [11, 14, 15, 16].map(k => c[k]);
+    if ([costo, base, iva, total].every(x => typeof x === "number")) {
+      let nom = nombre, n = 2; while (usados.has(nom)) nom = `${nombre} (${n++})`; usados.add(nom);
+      prods.push({nombre: nom, costo, base, iva, total, seccion: sec});
+    } else { sec = nombre; if (!secs.includes(sec)) secs.push(sec); }
+  }
+  return {prods, insumos: ins, secs: secs.filter(s => prods.some(p => p.seccion === s))};
+}
+
+/* ---------- Google: ingreso y llamadas a Drive ---------- */
+let tokenClient = null;
+function tokenValido() { return S.token && S.token.exp > Date.now() + 60000; }
+function pedirToken(interactivo) {
+  return new Promise((ok, mal) => {
+    if (!window.google || !google.accounts) return mal(new Error("No se pudo cargar el ingreso de Google. Revisa tu conexión."));
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: S.cfg.clientId, scope: SCOPE,
+      callback: r => { if (r.error) return mal(new Error(r.error)); S.token = {v: r.access_token, exp: Date.now() + (r.expires_in || 3600) * 1000}; LS.set("madom_tok", S.token); ok(); },
+      error_callback: e => mal(new Error(e.type || "popup")),
+    });
+    tokenClient.requestAccessToken({prompt: interactivo ? "select_account" : ""});
+  });
+}
+async function api(url, opt = {}, reintento = true) {
+  if (!tokenValido()) { try { await pedirToken(false); } catch { throw new Error("SESION"); } }
+  const r = await fetch(url, {...opt, headers: {...(opt.headers || {}), Authorization: "Bearer " + S.token.v}});
+  if (r.status === 401 && reintento) { S.token = null; return api(url, opt, false); }
+  if (r.status === 401) throw new Error("SESION");
+  if (!r.ok) { const e = new Error("Drive " + r.status); e.status = r.status; throw e; }
+  return r;
+}
+const q = s => encodeURIComponent(s);
+async function listar(consulta, campos = "files(id,name,parents,modifiedTime)") {
+  const r = await api(`${API}/files?q=${q(consulta)}&fields=${q(campos)}&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true`);
+  return (await r.json()).files || [];
+}
+async function leerJSON(id, vacio) {
+  if (!id) return vacio;
+  try { const r = await api(`${API}/files/${id}?alt=media&supportsAllDrives=true`); const t = await r.text(); const d = JSON.parse(t); return {...vacio, ...d}; }
+  catch (e) { if (e.status === 404) return vacio; throw e; }
+}
+async function escribirJSON(id, nombre, datos) {
+  const cuerpo = JSON.stringify(datos, null, 1);
+  if (!id) {
+    const r = await api(`${API}/files?supportsAllDrives=true`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: nombre, parents: [S.cfg.folderId], mimeType: "application/json"})});
+    id = (await r.json()).id;
+  }
+  await api(`${UP}/files/${id}?uploadType=media&supportsAllDrives=true`, {method: "PATCH", headers: {"Content-Type": "application/json"}, body: cuerpo});
+  return id;
+}
+async function ubicarArchivos(eleccion) {
+  let ex = eleccion;
+  if (!ex) {
+    const hall = await listar(`name='${S.cfg.excel.replace(/'/g, "\\'")}' and trashed=false`);
+    if (!hall.length) throw new Error(`No encontré «${S.cfg.excel}» en tu Drive. Revisa el nombre en Ajustes y que la carpeta esté sincronizada.`);
+    if (hall.length > 1) {
+      for (const h of hall) { try { const p = await (await api(`${API}/files/${h.parents[0]}?fields=name&supportsAllDrives=true`)).json(); h.carpeta = p.name; } catch { h.carpeta = "?"; } }
+      S.candidatos = hall; return false;
+    }
+    ex = hall[0];
+  }
+  S.candidatos = null;
+  S.cfg.folderId = ex.parents[0];
+  const arch = await listar(`'${S.cfg.folderId}' in parents and trashed=false`);
+  const f = n => (arch.find(a => a.name === n) || {}).id || null;
+  S.cfg.ids = {xlsx: ex.id, ventas: f("ventas_madom.json"), compras: f("compras_madom.json"), stock: f("stock_madom.json")};
+  guardarCfg();
+  return true;
+}
+
+/* ---------- carga y sincronización ---------- */
+const VACIO = {ventas: {ventas: [], sig: 1}, compras: {proveedores: {}, facturas: [], sig_prov: 1, sig_fac: 1, vinculos: {}, precios_fecha: {}}, stock: {minimos: {}, movs: [], sig: 1}};
+async function sincronizar(manual) {
+  if (S.cargando) return; S.cargando = true; S.error = ""; pintarEstado();
+  try {
+    if (!S.cfg.clientId) return;
+    if (!S.cfg.ids.xlsx) { const ok = await ubicarArchivos(); if (!ok) return; }
+    let meta;
+    try { meta = await (await api(`${API}/files/${S.cfg.ids.xlsx}?fields=modifiedTime&supportsAllDrives=true`)).json(); }
+    catch (e) { if (e.status === 404) { S.cfg.ids = {}; guardarCfg(); const ok = await ubicarArchivos(); if (!ok) return; meta = await (await api(`${API}/files/${S.cfg.ids.xlsx}?fields=modifiedTime&supportsAllDrives=true`)).json(); } else throw e; }
+    const d = S.data || {};
+    let xl = {prods: d.prods, secs: d.secs, insumos: d.insumos};
+    if (!d.prods || d.xlsxMod !== meta.modifiedTime) {
+      const buf = await (await api(`${API}/files/${S.cfg.ids.xlsx}?alt=media&supportsAllDrives=true`)).arrayBuffer();
+      xl = parsearExcel(await leerXlsx(buf));
+    }
+    const [ventas, compras, stock] = await Promise.all([
+      leerJSON(S.cfg.ids.ventas, VACIO.ventas), leerJSON(S.cfg.ids.compras, VACIO.compras), leerJSON(S.cfg.ids.stock, VACIO.stock)]);
+    S.data = {...xl, ventas, compras, stock, xlsxMod: meta.modifiedTime, cuando: Date.now()};
+    guardarCache(); S.offline = false;
+    if (manual) toast("Datos actualizados");
+  } catch (e) {
+    if (e.message === "SESION") { S.error = "SESION"; }
+    else if (e instanceof TypeError || !navigator.onLine) { S.offline = true; }
+    else S.error = e.message || String(e);
+  } finally { S.cargando = false; pintar(); }
+}
+
+/* ---------- escritura de ventas (lee lo último de Drive, cambia y guarda) ---------- */
+async function respaldoAntes(contenido) {
+  if (S.respaldado || !S.cfg.ids.ventas) return;
+  let carpeta = (await listar(`name='respaldos' and mimeType='application/vnd.google-apps.folder' and '${S.cfg.folderId}' in parents and trashed=false`))[0];
+  if (!carpeta) carpeta = await (await api(`${API}/files?supportsAllDrives=true`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: "respaldos", mimeType: "application/vnd.google-apps.folder", parents: [S.cfg.folderId]})})).json();
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  const sello = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  const c = await (await api(`${API}/files?supportsAllDrives=true`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: `ventas_madom_${sello}.json`, parents: [carpeta.id], mimeType: "application/json"})})).json();
+  await api(`${UP}/files/${c.id}?uploadType=media&supportsAllDrives=true`, {method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify(contenido, null, 1)});
+  S.respaldado = true;
+}
+async function mutarVentas(fn) {
+  if (S.offline || !navigator.onLine) throw new Error("Necesitas conexión a internet para guardar.");
+  const fresco = await leerJSON(S.cfg.ids.ventas, {ventas: [], sig: 1});
+  const base = {ventas: fresco.ventas, sig: fresco.sig};
+  const copia = JSON.parse(JSON.stringify(base));
+  await respaldoAntes(copia);
+  const res = fn(base);
+  S.cfg.ids.ventas = await escribirJSON(S.cfg.ids.ventas, "ventas_madom.json", base);
+  guardarCfg();
+  S.data.ventas = base; guardarCache();
+  return res;
+}
+
+/* ---------- cálculos (mismos que la app de la PC) ---------- */
+const totalCobrado = v => (v.pagos || []).reduce((a, p) => a + p.monto, 0);
+const saldoVenta = v => !("pagos" in v) ? 0 : r2(v.total - totalCobrado(v));
+const estadoVenta = v => saldoVenta(v) <= 0.005 ? "Cobrada" : totalCobrado(v) > 0 ? "Parcial" : "A cobrar";
+const nombreCli = v => (v.cliente || "").trim() || "Mostrador (sin cliente)";
+const totalPagado = f => (f.pagos || []).reduce((a, p) => a + p.monto, 0);
+const saldoFac = f => r2(f.total - totalPagado(f));
+function stockActual(st) { const o = {}; for (const mv of st.movs) o[mv.insumo] = (o[mv.insumo] || 0) + mv.cant; return o; }
+function estadoStock(n, act, min, tiene) {
+  if (!tiene && !(n in min)) return "—"; const s = act[n] || 0;
+  if (s < -1e-9) return "Negativo"; if (n in min && s <= min[n] + 1e-9) return "Bajo"; return "OK";
+}
+function resumenVentas(vs) { const r = {total: 0, iva: 0, costo: 0, gan: 0, n: vs.length}; for (const v of vs) { r.total += v.total; r.iva += v.iva; r.costo += v.costo; r.gan += v.gan; } return r; }
+function alertas() {
+  const d = S.data, hoy = hoyISO(), out = [];
+  for (const f of d.compras.facturas) {
+    if (saldoFac(f) > 0.005 && f.vence) {
+      const dias = diasEntre(f.vence, hoy); if (dias > 7) continue;
+      const prov = (d.compras.proveedores[f.proveedor] || {}).nombre || "—";
+      const cuando = dias < -1 ? `Vencida hace ${-dias} días` : dias === -1 ? "Vencida ayer" : dias === 0 ? "Vence hoy" : dias === 1 ? "Vence mañana" : `Vence en ${dias} días`;
+      out.push({o: (dias <= 2 ? 0 : 2) * 1e6 + dias, tipo: "Pagar", urg: dias <= 2, t: `${prov} · factura ${f.numero || fmtFecha(f.fecha)}`, c: cuando, monto: saldoFac(f)});
+    }
+  }
+  const por = {};
+  for (const v of d.ventas.ventas) { const sd = saldoVenta(v); if (sd > 0.005) { const c = por[nombreCli(v)] ||= {saldo: 0, desde: v.fecha}; c.saldo += sd; if (v.fecha < c.desde) c.desde = v.fecha; } }
+  for (const [n, c] of Object.entries(por)) {
+    const dias = diasEntre(hoy, c.desde), urg = dias > 30;
+    out.push({o: (urg ? 1 : 3) * 1e6 - dias, tipo: "Cobrar", urg, t: `${n} te debe`, c: dias > 1 ? `Desde hace ${dias} días` : dias === 1 ? "Desde ayer" : "Desde hoy", monto: c.saldo});
+  }
+  const act = stockActual(d.stock);
+  for (const i of d.insumos) {
+    const e = estadoStock(i.nombre, act, d.stock.minimos, i.nombre in act);
+    if (e === "Bajo" || e === "Negativo") { const mn = d.stock.minimos[i.nombre]; out.push({o: 1e6, tipo: "Reponer", urg: true, t: `${i.nombre}: quedan ${cant(act[i.nombre] || 0)}` + (mn != null ? ` (mínimo ${cant(mn)})` : ""), c: e === "Bajo" ? "Stock bajo" : "Stock negativo"}); }
+  }
+  return out.sort((a, b) => a.o - b.o);
+}
+
+/* ---------- pantallas ---------- */
+const TABS = [["inicio", "🏠", "Inicio"], ["vender", "🛒", "Vender"], ["ventas", "🧾", "Ventas"], ["clientes", "👥", "Clientes"], ["consultar", "🔎", "Consultar"]];
+function pintarNav() { $("#nav").innerHTML = TABS.map(([k, i, t]) => `<button data-v="${k}" class="${S.vista === k ? "on" : ""}"><span>${i}</span>${t}</button>`).join(""); }
+function pintarEstado() {
+  const e = $("#est");
+  if (S.cargando) e.textContent = "Actualizando…";
+  else if (S.data && S.data.cuando) { const d = new Date(S.data.cuando); e.textContent = (S.offline ? "Sin conexión · " : "") + "Datos de " + d.toLocaleTimeString("es-AR", {hour: "2-digit", minute: "2-digit"}); }
+  else e.textContent = "";
+}
+function pintar() {
+  pintarNav(); pintarEstado();
+  const v = $("#vista"), cw = $("#cartWrap"); cw.innerHTML = "";
+  if (!S.cfg.clientId) return pantallaInicioSesion(v, true);
+  if (S.error === "SESION") return pantallaInicioSesion(v, false);
+  if (S.candidatos) return pantallaElegirExcel(v);
+  if (!S.data) { v.innerHTML = S.error ? `<div class="aviso">${esc(S.error)}</div><button class="b full" onclick="sincronizar(true)">Reintentar</button>` : `<div class="vacio">Cargando tus datos…</div>`; return; }
+  let h = "";
+  if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
+  if (S.offline) h += `<div class="aviso">Sin conexión: ves los últimos datos guardados. Para registrar ventas hace falta internet.</div>`;
+  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, clientes: vClientes, consultar: vConsultar})[S.vista]();
+  v.innerHTML = h;
+  if (S.vista === "vender" && S.cart.length) cw.innerHTML = `<button id="cart" onclick="abrirCarrito()"><span>🛒 ${S.cart.reduce((a, l) => a + l.q, 0) ? cant(S.cart.reduce((a, l) => a + l.q, 0)) : 0} producto(s)</span><span style="flex:1"></span><span>${money(totalCarrito().total)} ›</span></button>`;
+}
+function pantallaInicioSesion(v, primera) {
+  const c = S.cfg;
+  v.innerHTML = `<h2>${primera ? "Conectar con tu Google Drive" : "Volver a iniciar sesión"}</h2>
+  <div class="card">${primera ? "Una sola vez: pega el <b>Client ID</b> de Google y el nombre de tu Excel. Después se conecta con tu cuenta." : "Tu sesión de Google venció. Toca el botón para continuar."}
+  <label>Client ID de Google</label><input id="cid" value="${esc(c.clientId)}" placeholder="123456-abc.apps.googleusercontent.com" autocapitalize="off" autocorrect="off">
+  <label>Nombre de tu Excel en Drive</label><input id="exn" value="${esc(c.excel)}" autocapitalize="off">
+  <div style="height:14px"></div><button class="b full" id="bIngresar">Ingresar con Google</button></div>
+  <details class="card"><summary>¿Cómo consigo el Client ID?</summary><ol>
+  <li>Entra a <b>console.cloud.google.com</b> con tu cuenta y crea un proyecto (nombre libre).</li>
+  <li><b>APIs y servicios → Biblioteca</b>: busca <b>Google Drive API</b> y toca Habilitar.</li>
+  <li><b>Pantalla de consentimiento de OAuth</b>: tipo <b>Externo</b>, pon un nombre y tu correo. En <b>Usuarios de prueba</b> agrega tu propio correo.</li>
+  <li><b>Credenciales → Crear credenciales → ID de cliente de OAuth</b>, tipo <b>Aplicación web</b>. En <b>Orígenes autorizados de JavaScript</b> pon la dirección donde publicaste esta app (ej. <code>https://tuusuario.github.io</code>, sin barra final).</li>
+  <li>Copia el <b>ID de cliente</b> y pégalo arriba. Al ingresar, Google dirá «app no verificada»: toca <b>Avanzada → Ir a… (no seguro)</b>; es tu propia app.</li></ol></details>`;
+  $("#bIngresar").onclick = async () => {
+    S.cfg.clientId = $("#cid").value.trim(); S.cfg.excel = $("#exn").value.trim() || "recetas.xlsx";
+    if (!S.cfg.clientId) return toast("Falta el Client ID");
+    S.cfg.ids = {}; guardarCfg();
+    try { await pedirToken(true); S.error = ""; sincronizar(); } catch (e) { toast("No se pudo ingresar: " + e.message); }
+  };
+}
+function pantallaElegirExcel(v) {
+  v.innerHTML = `<h2>Hay varios «${esc(S.cfg.excel)}»</h2><div class="suave" style="margin-bottom:10px">Elige el que usa tu app de la PC:</div>` +
+    S.candidatos.map((h, i) => `<button class="card b sec full" style="text-align:left" data-e="${i}"><div class="t1">Carpeta: ${esc(h.carpeta)}</div><div class="t2">Modificado ${esc(new Date(h.modifiedTime).toLocaleString("es-AR"))}</div></button>`).join("");
+  v.querySelectorAll("[data-e]").forEach(b => b.onclick = async () => { const h = S.candidatos[+b.dataset.e]; await ubicarArchivos(h); sincronizar(true); });
+}
+
+function vInicio() {
+  const d = S.data, mes = hoyISO().slice(0, 7), vm = d.ventas.ventas.filter(v => v.fecha.slice(0, 7) === mes), r = resumenVentas(vm);
+  const meDeben = d.ventas.ventas.reduce((a, v) => a + Math.max(0, saldoVenta(v)), 0);
+  const debo = d.compras.facturas.reduce((a, f) => a + Math.max(0, saldoFac(f)), 0);
+  const al = alertas();
+  return `<h2>${MESES[+mes.slice(5) - 1]}</h2>
+  <div class="grid2"><div class="stat"><div class="l">Vendido (con IVA)</div><div class="n">${money(r.total)}</div></div>
+  <div class="stat"><div class="l">Ganancia</div><div class="n verde">${money(r.gan)}</div></div>
+  <div class="stat"><div class="l">Me deben clientes</div><div class="n">${money(meDeben)}</div></div>
+  <div class="stat"><div class="l">Debo a proveedores</div><div class="n">${money(debo)}</div></div></div>
+  <h3>Para atender</h3>` + (al.length ? al.slice(0, 25).map(a => `<div class="card fila"><div class="g"><div class="t1">${esc(a.t)}</div><div class="t2 ${a.urg ? "rojo" : ""}">${esc(a.tipo)} · ${esc(a.c)}</div></div>${a.monto != null ? `<div class="monto">${money(a.monto)}</div>` : ""}</div>`).join("") : `<div class="vacio">Todo al día ✔</div>`);
+}
+
+function totalCarrito() { let base = 0, iva = 0, costo = 0; for (const l of S.cart) { base += l.u.base * l.q; iva += l.u.iva * l.q; costo += l.u.costo * l.q; } return {base, iva, costo, total: base + iva, gan: base - costo}; }
+const guardarCart = () => LS.set("madom_cart", S.cart);
+function vVender() {
+  const d = S.data, qn = norm(S.busca);
+  const lst = d.prods.filter(p => (S.seccion === "Todas" || p.seccion === S.seccion) && (!qn || norm(p.nombre).includes(qn))).slice(0, 80);
+  return `<h2>Nueva venta</h2><input id="bus" type="search" placeholder="Buscar producto…" value="${esc(S.busca)}" autocomplete="off">
+  <div style="height:8px"></div><select id="secSel"><option>Todas</option>${d.secs.map(s => `<option ${s === S.seccion ? "selected" : ""}>${esc(s)}</option>`).join("")}</select>
+  <div class="lista card" style="margin-top:10px;padding:4px 12px">` + (lst.length ? lst.map(p => `<div class="item fila" data-p="${esc(p.nombre)}"><div class="g"><div class="t1">${esc(p.nombre)}</div><div class="t2">${esc(p.seccion)}</div></div><div class="monto">${money(p.total)}</div><button class="b" style="padding:8px 14px" aria-label="Agregar">＋</button></div>`).join("") : `<div class="vacio">Sin resultados</div>`) + `</div>${lst.length === 80 ? '<div class="t2">Mostrando los primeros 80: afina la búsqueda.</div>' : ""}<div style="height:70px"></div>`;
+}
+function agregarAlCarrito(nombre) {
+  const p = S.data.prods.find(x => x.nombre === nombre); if (!p) return;
+  const l = S.cart.find(x => x.nombre === nombre);
+  if (l) l.q += 1; else S.cart.push({nombre, q: 1, u: {total: p.total, base: p.base, iva: p.iva, costo: p.costo}});
+  guardarCart(); const y = scrollY; pintar(); scrollTo(0, y);
+}
+function abrirCarrito() {
+  const clientes = [...new Set(S.data.ventas.ventas.map(nombreCli))].filter(c => c !== "Mostrador (sin cliente)").sort((a, b) => norm(a).localeCompare(norm(b)));
+  const t = totalCarrito();
+  const filas = S.cart.map((l, i) => `<div class="card"><div class="t1">${esc(l.nombre)}</div><div class="fila" style="margin-top:8px"><div class="q"><button data-m="${i}">−</button><input data-q="${i}" inputmode="decimal" value="${cant(l.q)}"><button data-s="${i}">+</button></div><div class="g"></div><div class="monto">${money(l.u.total * l.q)}</div><button class="ib" data-x="${i}" aria-label="Quitar">🗑</button></div></div>`).join("");
+  abrirSheet(`<h2>Carrito</h2>${filas || '<div class="vacio">Está vacío</div>'}
+  <div class="card"><div class="fila"><div class="g">Total a cobrar</div><div class="monto" style="font-size:20px">${money(t.total)}</div></div><div class="t2">IVA ${money(t.iva)} · Ganancia <span class="verde">${money(t.gan)}</span></div></div>
+  <label>Fecha</label><input id="vf" type="date" value="${hoyISO()}">
+  <label>Cliente (opcional)</label><input id="vc" list="dlc" placeholder="Elige o escribe uno nuevo" autocomplete="off"><datalist id="dlc">${clientes.map(c => `<option value="${esc(c)}">`).join("")}</datalist>
+  <label>Cobro</label><div class="seg" id="vcb"><button class="on" data-c="Cobrada">Cobrada</button><button data-c="A cobrar">A cobrar</button></div>
+  <label>Nota (opcional)</label><input id="vn" autocomplete="off">
+  <div style="height:14px"></div><button class="b full" id="vg" ${S.cart.length ? "" : "disabled"}>Guardar venta</button>
+  <div style="height:8px"></div><button class="b sec full" onclick="cerrarSheet()">Seguir agregando</button>`);
+  const sh = $("#sheetIn");
+  const refrescarCarrito = () => { guardarCart(); const f = {c: $("#vc")?.value, n: $("#vn")?.value, d: $("#vf")?.value, k: sh.querySelector("#vcb .on")?.dataset.c}; abrirCarrito(); if (f.c != null) { $("#vc").value = f.c; $("#vn").value = f.n; $("#vf").value = f.d; sh.querySelectorAll("#vcb button").forEach(b => b.classList.toggle("on", b.dataset.c === f.k)); } pintar(); };
+  sh.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { const l = S.cart[+b.dataset.m]; l.q = Math.max(0, r2(l.q - 1)); if (l.q <= 0) S.cart.splice(+b.dataset.m, 1); refrescarCarrito(); });
+  sh.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { S.cart[+b.dataset.s].q = r2(S.cart[+b.dataset.s].q + 1); refrescarCarrito(); });
+  sh.querySelectorAll("[data-x]").forEach(b => b.onclick = () => { S.cart.splice(+b.dataset.x, 1); refrescarCarrito(); });
+  sh.querySelectorAll("[data-q]").forEach(i => i.onchange = () => { const n = num(i.value); if (n > 0) S.cart[+i.dataset.q].q = n; else S.cart.splice(+i.dataset.q, 1); refrescarCarrito(); });
+  sh.querySelectorAll("#vcb button").forEach(b => b.onclick = () => { sh.querySelectorAll("#vcb button").forEach(x => x.classList.toggle("on", x === b)); });
+  $("#vg").onclick = guardarVenta;
+}
+async function guardarVenta() {
+  const cliente = $("#vc").value.trim(), aCobrar = $("#vcb .on").dataset.c === "A cobrar", fecha = $("#vf").value, nota = $("#vn").value.trim();
+  if (!fecha) return toast("Elige la fecha");
+  if (aCobrar && !cliente) return toast("Para dejarla «A cobrar» escribe el cliente");
+  const t = totalCarrito(), btn = $("#vg"); btn.disabled = true; btn.textContent = "Guardando…";
+  try {
+    const venta = await mutarVentas(base => {
+      const v = {id: base.sig, fecha, cliente, nota,
+        lineas: S.cart.map(l => ({nombre: l.nombre, q: l.q, total_u: l.u.total, base_u: l.u.base, iva_u: l.u.iva, costo_u: l.u.costo})),
+        base: r2(t.base), iva: r2(t.iva), total: r2(t.total), costo: r2(t.costo), gan: r2(t.gan),
+        pagos: aCobrar ? [] : [{fecha, monto: r2(t.total), nota: "Cobro total"}], origen: "celular"};
+      base.ventas.push(v); base.sig += 1; return v;
+    });
+    S.cart = []; guardarCart(); cerrarSheet(); S.vista = "ventas"; S.mes = fecha.slice(0, 7); pintar();
+    toast("Venta registrada" + (aCobrar ? " · queda a cobrar" : ""));
+  } catch (e) { btn.disabled = false; btn.textContent = "Guardar venta"; errorEscritura(e); }
+}
+function errorEscritura(e) { if (e.message === "SESION") { S.error = "SESION"; cerrarSheet(); pintar(); } else toast(e.message.startsWith("Drive") ? "No se pudo guardar en Drive (" + e.message + "). Intenta de nuevo." : e.message); }
+
+function vVentas() {
+  const d = S.data, vs = d.ventas.ventas.filter(v => v.fecha.slice(0, 7) === S.mes).sort((a, b) => (b.fecha + String(b.id).padStart(8, "0")).localeCompare(a.fecha + String(a.id).padStart(8, "0")));
+  const r = resumenVentas(vs), [a, mm] = S.mes.split("-");
+  return `<div class="fila"><button class="b sec" data-mes="-1">◀</button><h2 class="g" style="text-align:center;margin:0">${MESES[+mm - 1]} ${a}</h2><button class="b sec" data-mes="1">▶</button></div>
+  <div class="grid2" style="margin-top:10px"><div class="stat"><div class="l">Vendido</div><div class="n">${money(r.total)}</div></div><div class="stat"><div class="l">Ganancia</div><div class="n verde">${money(r.gan)}</div></div></div>
+  <div style="height:10px"></div>` + (vs.length ? vs.map(v => cardVenta(v)).join("") : `<div class="vacio">No hay ventas este mes</div>`);
+}
+function cardVenta(v) {
+  const e = estadoVenta(v);
+  return `<div class="card fila" data-v="${v.id}" style="cursor:pointer"><div class="g"><div class="t1">${esc(nombreCli(v))}</div><div class="t2">${fmtFecha(v.fecha)} · ${v.lineas.length} producto(s)${v.origen === "celular" ? " · 📱" : ""}</div></div><div style="text-align:right"><div class="monto">${money(v.total)}</div><span class="badge ${e === "Cobrada" ? "ok" : e === "Parcial" ? "med" : "mal"}">${e}</span></div></div>`;
+}
+function abrirVenta(id) {
+  const v = S.data.ventas.ventas.find(x => x.id === id); if (!v) return;
+  const sd = saldoVenta(v), e = estadoVenta(v);
+  abrirSheet(`<h2>${esc(nombreCli(v))}</h2><div class="t2">${fmtFecha(v.fecha)} · <span class="badge ${e === "Cobrada" ? "ok" : e === "Parcial" ? "med" : "mal"}">${e}</span></div>
+  <div class="card" style="margin-top:10px">${v.lineas.map(l => `<div class="fila" style="padding:4px 0"><div class="g">${cant(l.q)} × ${esc(l.nombre)}</div><div class="monto">${money(l.q * l.total_u)}</div></div>`).join("")}
+  <hr style="border:0;border-top:1px solid var(--borde)"><div class="fila"><div class="g">Total</div><div class="monto">${money(v.total)}</div></div>
+  <div class="t2">IVA ${money(v.iva)} · Costo ${money(v.costo)} · Ganancia <span class="verde">${money(v.gan)}</span></div>
+  ${"pagos" in v ? `<div class="t2">Cobrado ${money(totalCobrado(v))} · Saldo ${money(sd)}</div>` : ""}${v.nota ? `<div class="t2">Nota: ${esc(v.nota)}</div>` : ""}</div>
+  ${(v.pagos || []).length ? `<h3>Cobros</h3>` + v.pagos.map(p => `<div class="fila" style="padding:3px 0"><div class="g">${fmtFecha(p.fecha)} ${p.nota ? "· " + esc(p.nota) : ""}</div><div class="monto">${money(p.monto)}</div></div>`).join("") : ""}
+  ${sd > 0.005 ? `<label>Cobrar ahora</label><input id="cm" inputmode="decimal" value="${m(sd)}"><label>Fecha</label><input id="cf" type="date" value="${hoyISO()}"><label>Nota (opcional)</label><input id="cn"><div style="height:12px"></div><button class="b full" id="cg">Registrar cobro</button><div style="height:8px"></div>` : ""}
+  <button class="b peli full" id="ce">Eliminar venta</button><div style="height:8px"></div><button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
+  if (sd > 0.005) $("#cg").onclick = async () => {
+    const monto = num($("#cm").value), fecha = $("#cf").value;
+    if (!(monto > 0)) return toast("Escribe un monto válido");
+    if (monto > sd + 0.005) return toast("El monto supera el saldo (" + money(sd) + ")");
+    if (!fecha) return toast("Elige la fecha");
+    const b = $("#cg"); b.disabled = true; b.textContent = "Guardando…";
+    try { await mutarVentas(base => { const x = base.ventas.find(y => y.id === id); if (!x) throw new Error("Esa venta ya no existe (se borró desde otro dispositivo)."); (x.pagos ||= []).push({fecha, monto: r2(monto), nota: $("#cn").value.trim()}); }); cerrarSheet(); pintar(); toast("Cobro registrado"); }
+    catch (er) { b.disabled = false; b.textContent = "Registrar cobro"; errorEscritura(er); }
+  };
+  $("#ce").onclick = async () => {
+    if (!confirm(`¿Eliminar la venta del ${fmtFecha(v.fecha)} por ${money(v.total)}?`)) return;
+    try { await mutarVentas(base => { base.ventas = base.ventas.filter(y => y.id !== id); }); cerrarSheet(); pintar(); toast("Venta eliminada"); } catch (er) { errorEscritura(er); }
+  };
+}
+
+function vClientes() {
+  const por = {};
+  for (const v of S.data.ventas.ventas) { const n = nombreCli(v), c = por[n] ||= {n, total: 0, saldo: 0, cant: 0}; c.total += v.total; c.saldo += Math.max(0, saldoVenta(v)); c.cant++; }
+  const lst = Object.values(por).sort((a, b) => b.saldo - a.saldo || norm(a.n).localeCompare(norm(b.n)));
+  return `<h2>Clientes</h2>` + (lst.length ? lst.map(c => `<div class="card fila" data-c="${esc(c.n)}" style="cursor:pointer"><div class="g"><div class="t1">${esc(c.n)}</div><div class="t2">${c.cant} venta(s) · ${money(c.total)}</div></div><div style="text-align:right"><div class="monto ${c.saldo > 0.005 ? "rojo" : "verde"}">${c.saldo > 0.005 ? money(c.saldo) : "Al día"}</div>${c.saldo > 0.005 ? '<div class="t2">te debe</div>' : ""}</div></div>`).join("") : `<div class="vacio">Todavía no hay ventas</div>`);
+}
+function abrirCliente(n) {
+  const vs = S.data.ventas.ventas.filter(v => nombreCli(v) === n).sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+  const deuda = vs.reduce((a, v) => a + Math.max(0, saldoVenta(v)), 0);
+  abrirSheet(`<h2>${esc(n)}</h2><div class="t2">${deuda > 0.005 ? `Te debe <b class="rojo">${money(deuda)}</b>` : "Está al día"}</div><div style="height:10px"></div>` + vs.map(cardVenta).join("") + `<button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
+  $("#sheetIn").querySelectorAll("[data-v]").forEach(e => e.onclick = () => abrirVenta(+e.dataset.v));
+}
+
+function vConsultar() {
+  const d = S.data, qn = norm(S.busca);
+  let h = `<h2>Consultar</h2><div class="seg">${[["productos", "Productos"], ["insumos", "Insumos"], ["stock", "Stock"]].map(([k, t]) => `<button data-k="${k}" class="${S.consulta === k ? "on" : ""}">${t}</button>`).join("")}</div><input id="bus" type="search" placeholder="Buscar…" value="${esc(S.busca)}" autocomplete="off"><div style="height:10px"></div>`;
+  if (S.consulta === "productos") {
+    const l = d.prods.filter(p => !qn || norm(p.nombre).includes(qn));
+    h += l.length ? l.slice(0, 120).map(p => `<div class="card"><div class="fila"><div class="g t1">${esc(p.nombre)}</div><div class="monto">${money(p.total)}</div></div><div class="t2">Costo ${money(p.costo)} · Ganancia <span class="verde">${money(p.base - p.costo)}</span> · ${p.base ? ((p.base - p.costo) / p.base * 100).toFixed(1).replace(".", ",") : "0"} %</div></div>`).join("") : `<div class="vacio">Sin resultados</div>`;
+  } else if (S.consulta === "insumos") {
+    const l = d.insumos.filter(i => !qn || norm(i.nombre).includes(qn));
+    h += l.length ? `<div class="card" style="padding:4px 12px">` + l.slice(0, 200).map(i => `<div class="item fila" style="padding:10px 0;border-bottom:1px solid var(--borde)"><div class="g">${esc(i.nombre)}</div><div class="monto">${money(i.precio)}</div></div>`).join("") + `</div>` : `<div class="vacio">Sin resultados</div>`;
+  } else {
+    const act = stockActual(d.stock), l = d.insumos.filter(i => !qn || norm(i.nombre).includes(qn)).map(i => ({n: i.nombre, e: estadoStock(i.nombre, act, d.stock.minimos, i.nombre in act), s: act[i.nombre] || 0, mn: d.stock.minimos[i.nombre]})).filter(x => x.e !== "—");
+    const ord = {Negativo: 0, Bajo: 1, OK: 2}; l.sort((a, b) => ord[a.e] - ord[b.e] || norm(a.n).localeCompare(norm(b.n)));
+    h += l.length ? l.map(x => `<div class="card fila"><div class="g"><div class="t1">${esc(x.n)}</div><div class="t2">${x.mn != null ? "Mínimo " + cant(x.mn) : "Sin mínimo"}</div></div><div style="text-align:right"><div class="monto">${cant(x.s)}</div><span class="badge ${x.e === "OK" ? "ok" : "mal"}">${x.e}</span></div></div>`).join("") : `<div class="vacio">Todavía no hay stock cargado</div>`;
+  }
+  return h;
+}
+
+/* ---------- hoja inferior y ajustes ---------- */
+function abrirSheet(h) { $("#sheetIn").innerHTML = h; $("#sheet").classList.add("on"); }
+function cerrarSheet() { $("#sheet").classList.remove("on"); }
+function abrirAjustes() {
+  abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
+  <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
+  <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
+  <div style="height:12px"></div><button class="b full" id="ag">Guardar y volver a buscar mis archivos</button><div style="height:8px"></div>
+  <button class="b sec full" id="as">Cerrar sesión</button><div style="height:8px"></div><button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
+  $("#ag").onclick = () => { S.cfg.clientId = $("#acid").value.trim(); S.cfg.excel = $("#aex").value.trim() || "recetas.xlsx"; S.cfg.ids = {}; guardarCfg(); S.data = null; localStorage.removeItem("madom_cache"); cerrarSheet(); sincronizar(true); };
+  $("#as").onclick = () => { S.token = null; localStorage.removeItem("madom_tok"); try { google.accounts.oauth2.revoke && S.token; } catch {} S.error = "SESION"; cerrarSheet(); pintar(); };
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button,[data-v],[data-c],[data-p]"); if (!t) return;
+  if (t.closest("nav") && t.dataset.v) { S.vista = t.dataset.v; S.busca = ""; scrollTo(0, 0); return pintar(); }
+  if (t.closest("#sheet")) return;
+  if (t.dataset.mes) { const [a, mm] = S.mes.split("-").map(Number), d = new Date(a, mm - 1 + Number(t.dataset.mes), 1); S.mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; return pintar(); }
+  if (t.dataset.k) { S.consulta = t.dataset.k; S.busca = ""; return pintar(); }
+  if (t.closest("#vista")) {
+    const fila = e.target.closest("[data-p]"); if (fila) return agregarAlCarrito(fila.dataset.p);
+    const cv = e.target.closest("[data-v]"); if (cv) return abrirVenta(+cv.dataset.v);
+    const cc = e.target.closest("[data-c]"); if (cc) return abrirCliente(cc.dataset.c);
+  }
+});
+$("#vista").addEventListener("input", e => {
+  if (e.target.id === "bus") { S.busca = e.target.value; const pos = e.target.selectionStart; pintar(); const n = $("#bus"); n.focus(); n.setSelectionRange(pos, pos); }
+});
+$("#vista").addEventListener("change", e => { if (e.target.id === "secSel") { S.seccion = e.target.value; pintar(); } });
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") cerrarSheet(); });
+$("#bSync").onclick = () => sincronizar(true);
+$("#bAjustes").onclick = abrirAjustes;
+document.addEventListener("visibilitychange", () => { if (!document.hidden && S.cfg.clientId && S.data && Date.now() - (S.data.cuando || 0) > 60000 && !$("#sheet").classList.contains("on")) sincronizar(); });
+window.addEventListener("online", () => sincronizar());
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+pintar();
+if (S.cfg.clientId) { if (S.data) pintar(); sincronizar(); }
+</script>
+</body>
+</html>

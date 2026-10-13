@@ -1,0 +1,49 @@
+MADOM · app del celular (web instalable)
+=========================================
+
+Qué hace
+- Lee tu Excel y los datos de la app de la PC desde tu Google Drive.
+- Desde el celular podés: registrar ventas (cobradas o a cobrar), registrar cobros,
+  ver clientes y deudas, consultar precios, costos, ganancia y stock, y ver las alertas.
+- Las ventas se guardan en ventas_madom.json, en la misma carpeta de Drive del Excel.
+  La app de la PC las toma sola a los pocos segundos.
+- No modifica tu Excel. Recetas, insumos, compras y facturas se siguen manejando en la PC.
+- Antes de su primer cambio de cada sesión, deja un respaldo en la carpeta «respaldos»
+  (aparece en «Respaldos y copia» de la app de la PC).
+
+PASO 1 · Dejar tus datos en Drive (una vez)
+- En la PC, abre la app MADOM > «Google Drive y celular» > «Mover mis datos a una carpeta…»
+  y elige una carpeta dentro de tu Drive (por ejemplo Mi unidad\MADOM).
+
+PASO 2 · Publicar esta app (una vez, gratis)
+1. Crea una cuenta en github.com (si no tienes).
+2. Arriba a la derecha: «+» > «New repository». Nombre: madom. Déjalo en «Public». Crear.
+3. Toca «uploading an existing file» y arrastra TODO lo que hay en esta carpeta
+   (index.html, sw.js, manifest.webmanifest y los .png). Toca «Commit changes».
+4. Ve a Settings > Pages. En «Branch» elige main y la carpeta / (root). Guardar.
+5. En un minuto aparece tu dirección: https://TUUSUARIO.github.io/madom/
+   (Es pública, pero sin tu cuenta de Google no muestra nada de tus datos.
+    Tu Client ID y tus datos NO están en esos archivos.)
+
+PASO 3 · Permiso de Google (una vez)
+1. Entra a console.cloud.google.com con tu cuenta y crea un proyecto (nombre libre).
+2. «APIs y servicios» > «Biblioteca»: busca «Google Drive API» > Habilitar.
+3. «Pantalla de consentimiento de OAuth»: tipo «Externo», pon un nombre y tu correo.
+   En «Usuarios de prueba» agrega TU correo de Google.
+4. «Credenciales» > «Crear credenciales» > «ID de cliente de OAuth» > «Aplicación web».
+   En «Orígenes autorizados de JavaScript» pon:  https://TUUSUARIO.github.io
+   (sin «/madom» y sin barra final). Crear y copiar el «ID de cliente».
+
+PASO 4 · Instalar en el celular
+1. Abre en Chrome (Android) o Safari (iPhone) la dirección del paso 2.
+2. Pega el ID de cliente, deja el nombre de tu Excel (recetas.xlsx) y toca «Ingresar con Google».
+   Google dirá «app no verificada»: toca «Avanzada» > «Ir a … (no seguro)». Es tu propia app.
+3. Menú del navegador > «Agregar a pantalla de inicio» / «Instalar app». Listo: queda con su ícono.
+
+Cosas a saber
+- Mientras el proyecto de Google esté en modo «prueba», Google puede pedirte volver a ingresar
+  cada tanto (hasta cada 7 días). Es solo tocar «Ingresar con Google».
+- Sin internet la app abre y muestra los últimos datos, pero no puede guardar ventas.
+- Si cargas una venta en el celular y otra en la PC casi a la vez, no se pisan (la app lee lo último
+  de Drive justo antes de guardar). Evita editar lo mismo en los dos al mismo segundo.
+- Para actualizar la app más adelante: sube los archivos nuevos al mismo repositorio.
