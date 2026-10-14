@@ -44,7 +44,10 @@ PASO 4 · Instalar en el celular
 Cosas a saber
 - Mientras el proyecto de Google esté en modo «prueba», Google puede pedirte volver a ingresar
   cada tanto (hasta cada 7 días). Es solo tocar «Ingresar con Google».
-- Sin internet la app abre y muestra los últimos datos, pero no puede guardar ventas.
+- Sin internet la app abre y muestra los últimos datos guardados (recetas, precios, ventas, clientes, compras),
+  pero no puede guardar ventas ni pagos hasta que vuelva la conexión.
+- Cada cierto tiempo (aprox. 1 hora) Google vence la sesión. La app sigue mostrando tus datos y te ofrece
+  el botón «Reconectar con Google» para volver a guardar.
 - Si cargas una venta en el celular y otra en la PC casi a la vez, no se pisan (la app lee lo último
   de Drive justo antes de guardar). Evita editar lo mismo en los dos al mismo segundo.
 - Para actualizar la app más adelante: sube los archivos nuevos al mismo repositorio.

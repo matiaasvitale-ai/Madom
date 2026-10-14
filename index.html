@@ -295,11 +295,17 @@ function pedirToken(interactivo) {
       callback: r => { if (r.error) return mal(new Error(r.error)); S.token = {v: r.access_token, exp: Date.now() + (r.expires_in || 3600) * 1000}; LS.set("madom_tok", S.token); ok(); },
       error_callback: e => mal(new Error(e.type || "popup")),
     });
-    tokenClient.requestAccessToken({prompt: interactivo ? "select_account" : ""});
+    if (interactivo === false) setTimeout(() => mal(new Error("tiempo")), 8000);
+    tokenClient.requestAccessToken({prompt: interactivo === true ? "select_account" : ""});
   });
 }
+async function reconectar() {       /* botón «Reconectar»: primero sin elegir cuenta, y si no se puede, eligiendo */
+  try { try { await pedirToken("gesto"); } catch { await pedirToken(true); } S.error = ""; sincronizar(true); }
+  catch (e) { toast("No se pudo reconectar: " + e.message); }
+}
 async function api(url, opt = {}, reintento = true) {
-  if (!tokenValido()) { try { await pedirToken(false); } catch { throw new Error("SESION"); } }
+  if (!navigator.onLine) throw new TypeError("sin conexión");
+  if (!tokenValido()) { try { await pedirToken(false); } catch { throw new Error(navigator.onLine ? "SESION" : "offline"); } }
   const r = await fetch(url, {...opt, headers: {...(opt.headers || {}), Authorization: "Bearer " + S.token.v}});
   if (r.status === 401 && reintento) { S.token = null; return api(url, opt, false); }
   if (r.status === 401) throw new Error("SESION");
@@ -375,7 +381,7 @@ async function sincronizar(manual) {
     if (manual) toast("Datos actualizados");
   } catch (e) {
     if (e.message === "SESION") { S.error = "SESION"; }
-    else if (e instanceof TypeError || !navigator.onLine) { S.offline = true; }
+    else if (e instanceof TypeError || e.message === "offline" || !navigator.onLine) { S.offline = true; }
     else S.error = e.message || String(e);
   } finally { S.cargando = false; pintar(); }
 }
@@ -464,12 +470,13 @@ function pintar() {
   pintarNav(); pintarEstado();
   const v = $("#vista"), cw = $("#cartWrap"); cw.innerHTML = "";
   if (!S.cfg.clientId) return pantallaInicioSesion(v, true);
-  if (S.error === "SESION") return pantallaInicioSesion(v, false);
+  if (S.error === "SESION" && !S.data) return pantallaInicioSesion(v, false);
   if (S.candidatos) return pantallaElegirExcel(v);
   if (S.lastVista !== S.vista) { S.lastVista = S.vista; v.classList.remove("ent"); void v.offsetWidth; v.classList.add("ent"); }
   if (!S.data) { v.innerHTML = S.error ? `<div class="aviso">${esc(S.error)}</div><button class="b full" onclick="sincronizar(true)">Reintentar</button>` : `<div class="sk" style="height:120px"></div><div class="sk" style="height:76px"></div><div class="sk" style="height:76px"></div><div class="sk" style="height:76px"></div>`; return; }
   let h = "";
-  if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
+  if (S.error === "SESION") h += `<div class="aviso">Tu sesión de Google venció, pero podés seguir viendo los últimos datos.<div style="height:10px"></div><button class="b full" onclick="reconectar()">Reconectar con Google</button></div>`;
+  else if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
   if (S.offline) h += `<div class="aviso">Sin conexión: ves los últimos datos guardados. Para registrar ventas hace falta internet.</div>`;
   h += ({inicio: vInicio, vender: vVender, ventas: vVentas, compras: vCompras, recetas: vRecetas, mas: vMas, clientes: vClientes, consultar: vConsultar})[S.vista]();
   if (S.vista === "clientes" || S.vista === "consultar") h = `<button class="b sec" data-go="mas" style="margin-bottom:6px">‹ Más</button>` + h;
@@ -567,7 +574,7 @@ async function guardarVenta() {
     toast("Venta registrada" + (aCobrar ? " · queda a cobrar" : ""));
   } catch (e) { btn.disabled = false; btn.textContent = "Guardar venta"; errorEscritura(e); }
 }
-function errorEscritura(e) { if (e.message === "SESION") { S.error = "SESION"; cerrarSheet(); pintar(); } else toast(e.message.startsWith("Drive") ? "No se pudo guardar en Drive (" + e.message + "). Intenta de nuevo." : e.message); }
+function errorEscritura(e) { if (e.message === "SESION") { S.error = "SESION"; cerrarSheet(); pintar(); toast("Tu sesión de Google venció. Toca «Reconectar» y vuelve a guardar."); } else toast(e.message.startsWith("Drive") ? "No se pudo guardar en Drive (" + e.message + "). Intenta de nuevo." : e.message); }
 
 function vVentas() {
   const d = S.data, vs = d.ventas.ventas.filter(v => v.fecha.slice(0, 7) === S.mes).sort((a, b) => (b.fecha + String(b.id).padStart(8, "0")).localeCompare(a.fecha + String(a.id).padStart(8, "0")));
@@ -755,6 +762,7 @@ function cerrarSheet() { $("#sheet").classList.remove("on"); $("#sheetIn").style
 })();
 function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">7 · sesión y modo sin conexión (13/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
