@@ -11,8 +11,8 @@
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#f3f3f1;--bg-a:rgba(243,243,241,.82);--card:#fff;--text:#0f0f0f;--suave:#6c6c70;--acc:#0f0f0f;--acc-t:#fff;--verde:#0b7a3e;--rojo:#c42b1c;--ambar:#a15c00;--borde:#e4e4e0;--campo:#f3f3f1;--chip:rgba(0,0,0,.075);--logo-inv:0;--sombra:0 10px 30px rgba(0,0,0,.14)}
-@media (prefers-color-scheme:dark){:root{--bg:#0b0b0c;--bg-a:rgba(11,11,12,.82);--card:#19191b;--text:#f5f5f5;--suave:#9a9aa1;--acc:#f5f5f5;--acc-t:#0b0b0c;--verde:#4cd48a;--rojo:#ff7a6e;--ambar:#f0b44a;--borde:#2a2a2d;--campo:#111113;--chip:rgba(255,255,255,.13);--logo-inv:1;--sombra:0 10px 30px rgba(0,0,0,.6)}}
+:root{--bg:#f3f3f1;--bg-a:rgba(243,243,241,.82);--card:#fff;--text:#0f0f0f;--suave:#6c6c70;--acc:#0f0f0f;--acc-t:#fff;--verde:#0b7a3e;--rojo:#c42b1c;--ambar:#a15c00;--borde:#e4e4e0;--campo:#f3f3f1;--chip:rgba(0,0,0,.075);--logo-inv:0;--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#6250d6;--gris:#9a938b;--sombra:0 10px 30px rgba(0,0,0,.14)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b0b0c;--bg-a:rgba(11,11,12,.82);--card:#19191b;--text:#f5f5f5;--suave:#9a9aa1;--acc:#f5f5f5;--acc-t:#0b0b0c;--verde:#4cd48a;--rojo:#ff7a6e;--ambar:#f0b44a;--borde:#2a2a2d;--campo:#111113;--chip:rgba(255,255,255,.13);--logo-inv:1;--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#9085e9;--gris:#7d766f;--sombra:0 10px 30px rgba(0,0,0,.6)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 html,body{margin:0;background:var(--bg);color:var(--text);font:500 16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -111,6 +111,17 @@ ol{padding-left:20px}li{margin:6px 0}
 a{color:var(--text)}
 hr{border:0;border-top:1px solid var(--borde);margin:10px 0}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.grafico{width:100%;height:auto;display:block}
+.gt{font-size:9.5px;fill:var(--suave);font-weight:600}
+.nw{white-space:nowrap;font-size:19px!important}.estdet{font-size:13.5px;color:var(--suave);margin-top:8px;overflow-wrap:anywhere}.estdet b{color:var(--text)}
+.hb{display:flex;flex-direction:column;gap:10px}
+.hbr{display:grid;grid-template-columns:minmax(0,34%) 1fr auto;gap:8px;align-items:center;font-size:13.5px}
+.hbn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.hbt{height:12px;background:var(--campo);border-radius:6px;overflow:hidden}.hbt i{display:block;height:100%;border-radius:6px}
+.hbv{font-variant-numeric:tabular-nums;color:var(--suave);font-weight:650;text-align:right;min-width:48px}
+.torta svg{width:170px;height:170px;display:block;margin:0 auto 8px}
+.tlr{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px;box-shadow:inset 0 -1px 0 var(--borde)}.tlr:last-child{box-shadow:none}
+.tln{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.tlv{color:var(--suave);font-variant-numeric:tabular-nums}.tlr b{min-width:34px;text-align:right}
 </style>
 </head>
 <body>
@@ -139,7 +150,8 @@ const API = "https://www.googleapis.com/drive/v3";
 const UP = "https://www.googleapis.com/upload/drive/v3";
 const HOJA_INS = "Lista de insumos", HOJA_PROD = "Lista de productos", FILA_INS = 60;
 const HOJAS_REC = ["Rellenos", "Bombones Linea premium", "Bombones linea licor", "Bombones linea bariloche", "Tabletas", "Grageas", "Pascuas", "TORTAS", "PEDIDOS"];
-const CATEGORIAS = {"Rellenos": ["Rellenos"], "Bombones": ["Bombones Linea premium", "Bombones linea licor", "Bombones linea bariloche"], "Tabletas": ["Tabletas"], "Alfajores": ["TORTAS"], "Grageas": ["Grageas"], "Pascuas": ["Pascuas"], "Tortas y postres": ["TORTAS"], "Pedidos": ["PEDIDOS"]};
+const CATEGORIAS = {"Rellenos": ["Rellenos"], "Bombones premium": ["Bombones Linea premium"], "Bombones línea licor": ["Bombones linea licor"], "Bombones línea bariloche": ["Bombones linea bariloche"], "Tabletas": ["Tabletas"], "Alfajores": ["TORTAS"], "Grageas": ["Grageas"], "Pascuas": ["Pascuas"]};
+const HOJAS_OCULTAS = ["PEDIDOS"], CATEGORIAS_OCULTAS = ["Tortas y postres", "Pedidos"];   // ya no se muestran en Recetas
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 /* ---------- utilidades ---------- */
@@ -169,6 +181,7 @@ const S = {
   offline: false, vista: "inicio", mes: hoyISO().slice(0, 7), consulta: "productos", cart: LS.get("madom_cart", []),
   busca: "", seccion: "Todas", catRec: "Todas", cargando: false, candidatos: null, error: "", respaldados: {}, subC: "pend", mesC: hoyISO().slice(0, 7),
 };
+S.est = {per: "12", iva: true, mes: null, ins: "", pi: null};
 const guardarCfg = () => LS.set("madom_cfg", S.cfg);
 const guardarCache = () => { try { localStorage.setItem("madom_cache", JSON.stringify(S.data)); } catch {} };
 
@@ -353,7 +366,7 @@ async function ubicarArchivos(eleccion) {
   S.cfg.folderId = ex.parents[0];
   const arch = await listar(`'${S.cfg.folderId}' in parents and trashed=false`);
   const f = n => (arch.find(a => a.name === n) || {}).id || null;
-  S.cfg.ids = {xlsx: ex.id, ventas: f("ventas_madom.json"), compras: f("compras_madom.json"), stock: f("stock_madom.json"), cats: f("categorias_madom.json")};
+  S.cfg.ids = {xlsx: ex.id, ventas: f("ventas_madom.json"), compras: f("compras_madom.json"), stock: f("stock_madom.json"), cats: f("categorias_madom.json"), costos: f("costos_madom.json")};
   guardarCfg();
   return true;
 }
@@ -374,9 +387,14 @@ async function sincronizar(manual) {
       const buf = await (await api(`${API}/files/${S.cfg.ids.xlsx}?alt=media&supportsAllDrives=true`)).arrayBuffer();
       xl = parsearExcel(await leerXlsx(buf));
     }
-    const [ventas, compras, stock, cats] = await Promise.all([
-      leerJSON(S.cfg.ids.ventas, VACIO.ventas), leerJSON(S.cfg.ids.compras, VACIO.compras), leerJSON(S.cfg.ids.stock, VACIO.stock), leerJSON(S.cfg.ids.cats, {})]);
-    S.data = {...xl, ventas, compras, stock, cats, xlsxMod: meta.modifiedTime, cuando: Date.now()};
+    if (!S.cfg.ids.costos && Date.now() - (S.costosChk || 0) > 300000) {      // el historial de costos lo crea la app de la PC
+      S.costosChk = Date.now();
+      try { const arch = await listar(`'${S.cfg.folderId}' in parents and name='costos_madom.json' and trashed=false`); S.cfg.ids.costos = (arch[0] || {}).id || null; guardarCfg(); } catch (e) { if (e.message === "SESION") throw e; }
+    }
+    const [ventas, compras, stock, cats, costos] = await Promise.all([
+      leerJSON(S.cfg.ids.ventas, VACIO.ventas), leerJSON(S.cfg.ids.compras, VACIO.compras), leerJSON(S.cfg.ids.stock, VACIO.stock), leerJSON(S.cfg.ids.cats, {}),
+      leerJSON(S.cfg.ids.costos, {snaps: []}).catch(e => { if (e.message === "SESION") throw e; return {snaps: []}; })]);
+    S.data = {...xl, ventas, compras, stock, cats, costos, xlsxMod: meta.modifiedTime, cuando: Date.now()};
     guardarCache(); S.offline = false;
     if (manual) toast("Datos actualizados");
   } catch (e) {
@@ -457,7 +475,7 @@ const ICO = {
   recetas: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M8 7.5h8"/>',
   mas: '<path d="M4 7h16M4 12h16M4 17h16"/>'};
 const TABS = [["inicio", "", "Inicio"], ["vender", "", "Vender"], ["ventas", "", "Ventas"], ["compras", "", "Compras"], ["recetas", "", "Recetas"], ["mas", "", "Más"]];
-const ES_MAS = ["mas", "clientes", "consultar"];
+const ES_MAS = ["mas", "clientes", "consultar", "estadisticas"];
 function pintarNav() { $("#nav").innerHTML = TABS.map(([k, i, t]) => `<button data-v="${k}" class="${S.vista === k || (k === "mas" && ES_MAS.includes(S.vista)) ? "on" : ""}"><i><svg viewBox="0 0 24 24">${ICO[k]}</svg></i>${t}</button>`).join(""); }
 function pintarEstado() {
   const e = $("#est");
@@ -478,8 +496,8 @@ function pintar() {
   if (S.error === "SESION") h += `<div class="aviso">Tu sesión de Google venció, pero podés seguir viendo los últimos datos.<div style="height:10px"></div><button class="b full" onclick="reconectar()">Reconectar con Google</button></div>`;
   else if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
   if (S.offline) h += `<div class="aviso">Sin conexión: ves los últimos datos guardados. Para registrar ventas hace falta internet.</div>`;
-  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, compras: vCompras, recetas: vRecetas, mas: vMas, clientes: vClientes, consultar: vConsultar})[S.vista]();
-  if (S.vista === "clientes" || S.vista === "consultar") h = `<button class="b sec" data-go="mas" style="margin-bottom:6px">‹ Más</button>` + h;
+  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, compras: vCompras, recetas: vRecetas, mas: vMas, clientes: vClientes, consultar: vConsultar, estadisticas: vEstadisticas})[S.vista]();
+  if (["clientes", "consultar", "estadisticas"].includes(S.vista)) h = `<button class="b sec" data-go="mas" style="margin-bottom:6px">‹ Más</button>` + h;
   v.innerHTML = h;
   if (S.vista === "vender" && S.cart.length) cw.innerHTML = `<button id="cart" onclick="abrirCarrito()"><span>🛒 ${S.cart.reduce((a, l) => a + l.q, 0) ? cant(S.cart.reduce((a, l) => a + l.q, 0)) : 0} producto(s)</span><span style="flex:1"></span><span>${money(totalCarrito().total)} ›</span></button>`;
 }
@@ -615,7 +633,7 @@ function abrirVenta(id) {
 
 function vRecetas() {
   const d = S.data, over = d.cats || {}, qn = norm(S.busca), cat = S.catRec || "Todas";
-  const todas = (d.recetas || []).map(r => ({...r, cat: categoriaDe(r, over)}));
+  const todas = (d.recetas || []).filter(r => !HOJAS_OCULTAS.includes(r.hoja)).map(r => ({...r, cat: categoriaDe(r, over)})).filter(r => !CATEGORIAS_OCULTAS.includes(r.cat));
   const orden = Object.keys(CATEGORIAS), cats = [...new Set(todas.map(r => r.cat))].sort((a, b) => (orden.indexOf(a) + 100 * (orden.indexOf(a) < 0)) - (orden.indexOf(b) + 100 * (orden.indexOf(b) < 0)));
   const l = todas.filter(r => (cat === "Todas" || r.cat === cat) && (!qn || norm(r.nombre).includes(qn)));
   return `<h2>Recetas</h2><input id="bus" type="search" placeholder="Buscar receta…" value="${esc(S.busca)}" autocomplete="off"><div style="height:8px"></div>
@@ -648,7 +666,7 @@ function abrirReceta(clave, mult = 1) {
 
 function vMas() {
   const it = (ic, t, sub, go) => `<div class="card fila" data-go="${go}" style="cursor:pointer"><div style="font-size:26px">${ic}</div><div class="g"><div class="t1">${t}</div><div class="t2">${sub}</div></div><div class="suave">›</div></div>`;
-  return `<h2>Más</h2>` + it("👥", "Clientes", "Quién te debe y sus ventas", "clientes") + it("🔎", "Consultar", "Precios de productos, insumos y stock", "consultar") + it("⚙", "Ajustes", "Cuenta de Google y nombre del Excel", "ajustes");
+  return `<h2>Más</h2>` + it("👥", "Clientes", "Quién te debe y sus ventas", "clientes") + it("📊", "Estadísticas", "Qué se vende más, qué mes, cómo varían los precios", "estadisticas") + it("🔎", "Consultar", "Precios de productos, insumos y stock", "consultar") + it("⚙", "Ajustes", "Cuenta de Google y nombre del Excel", "ajustes");
 }
 
 /* ----- compras ----- */
@@ -762,7 +780,7 @@ function cerrarSheet() { $("#sheet").classList.remove("on"); $("#sheetIn").style
 })();
 function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">7 · sesión y modo sin conexión (13/10)</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">11 · categorías de recetas (26/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
@@ -771,6 +789,191 @@ function abrirAjustes() {
   $("#ag").onclick = () => { const id = limpiarId($("#acid").value); if (!id) return toast("Eso no parece un ID de cliente. Tiene que terminar en .apps.googleusercontent.com"); S.cfg.clientId = id; S.cfg.excel = $("#aex").value.trim() || "recetas.xlsx"; S.cfg.ids = {}; guardarCfg(); S.data = null; localStorage.removeItem("madom_cache"); cerrarSheet(); sincronizar(true); };
   $("#as").onclick = () => { S.token = null; localStorage.removeItem("madom_tok"); try { google.accounts.oauth2.revoke && S.token; } catch {} S.error = "SESION"; cerrarSheet(); pintar(); };
 }
+
+/* ----- estadísticas ----- */
+const MES3 = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const DIAS7 = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const abrevM = v => { const a = Math.abs(v); return a >= 1e6 ? "$ " + (v / 1e6).toFixed(1).replace(".0", "").replace(".", ",") + " M" : a >= 1e3 ? "$ " + Math.round(v / 1e3) + " mil" : "$ " + Math.round(v); };
+const cortar = (t, n) => t.length > n ? t.slice(0, n - 1) + "…" : t;
+function pasoLindo(r, n = 4) { if (r <= 0) return 1; const c = r / n, mag = 10 ** Math.floor(Math.log10(c)), f = c / mag; for (const k of [1, 2, 2.5, 5, 10]) if (f <= k) return k * mag; return 10 * mag; }
+function marcasEje(lo, hi, n = 4) { const p = pasoLindo(hi - lo, n); let t = Math.floor(lo / p + 1e-9) * p; const o = []; while (t < hi + p * .999 && o.length < 12) { o.push(+t.toFixed(6)); t += p; } return o; }
+const okF = f => /^\d{4}-\d{2}/.test(f || "");
+
+function estPeriodos() {
+  const d = S.data, a = new Set([String(new Date().getFullYear())]);
+  for (const x of [...(d.ventas.ventas || []).map(v => v.fecha), ...(d.compras.facturas || []).map(f => f.fecha)]) if (okF(x)) a.add(x.slice(0, 4));
+  return ["12", ...[...a].sort().reverse().slice(0, 2), "todo"];
+}
+function estCalc() {
+  const d = S.data, E = S.est, vs0 = d.ventas.ventas || [], fs0 = d.compras.facturas || [], hoy = new Date();
+  const claves = [], rango = (a, mm, n) => { for (let i = 0; i < n; i++) { claves.push(`${a}-${String(mm).padStart(2, "0")}`); if (++mm > 12) { mm = 1; a++; } } };
+  if (E.per === "todo") {
+    const ks = [...vs0.map(v => v.fecha), ...fs0.map(f => f.fecha)].filter(okF).map(x => x.slice(0, 7)).sort();
+    if (ks.length) { const a0 = +ks[0].slice(0, 4), m0 = +ks[0].slice(5, 7), a1 = +ks.at(-1).slice(0, 4), m1 = +ks.at(-1).slice(5, 7); rango(a0, m0, Math.max(1, (a1 - a0) * 12 + m1 - m0 + 1)); }
+  }
+  if (!claves.length) { if (/^\d{4}$/.test(E.per)) rango(+E.per, 1, 12); else { let a = hoy.getFullYear(), mm = hoy.getMonth() + 1 - 11; if (mm < 1) { mm += 12; a--; } rango(a, mm, 12); } }
+  const idx = {}; claves.forEach((k, i) => idx[k] = i); const n = claves.length;
+  const vs = vs0.filter(v => okF(v.fecha) && v.fecha.slice(0, 7) in idx), fs = fs0.filter(f => okF(f.fecha) && f.fecha.slice(0, 7) in idx);
+  const mv = v => E.iva ? v.total : v.base, mf = f => E.iva ? f.total : (f.neto || f.total - (f.iva || 0) - (f.percep || 0));
+  const e = {claves, n, vs, fs, vm: Array(n).fill(0), cm: Array(n).fill(0), gm: Array(n).fill(0), dias: Array(7).fill(0),
+    etq: claves.map(k => MES3[+k.slice(5, 7) - 1] + (n > 12 ? " " + k.slice(2, 4) : ""))};
+  const prod = {}, gan = {}, cli = {}, prov = {}, ins = {}, pre = {};
+  for (const v of vs) {
+    const i = idx[v.fecha.slice(0, 7)]; e.vm[i] += mv(v); e.gm[i] += v.gan || 0;
+    cli[nombreCli(v)] = (cli[nombreCli(v)] || 0) + mv(v);
+    e.dias[(new Date(v.fecha.slice(0, 10) + "T12:00:00").getDay() + 6) % 7] += mv(v);
+    for (const l of v.lineas || []) {
+      const pu = E.iva ? l.total_u : (l.base_u ?? l.total_u), p = prod[l.nombre] ||= {q: 0, im: 0};
+      p.q += l.q; p.im += l.q * pu; gan[l.nombre] = (gan[l.nombre] || 0) + l.q * ((l.base_u ?? l.total_u) - (l.costo_u || 0));
+    }
+  }
+  for (const f of fs) {
+    e.cm[idx[f.fecha.slice(0, 7)]] += mf(f);
+    const pn = ((d.compras.proveedores || {})[f.proveedor] || {}).nombre || "—"; prov[pn] = (prov[pn] || 0) + mf(f);
+    for (const it of f.items || []) {
+      const nom = it.insumo || it.desc || "—", o = ins[nom] ||= {q: 0, im: 0}; o.q += it.cant; o.im += it.cant * it.precio;
+      if (it.precio) (pre[nom] ||= []).push({f: f.fecha.slice(0, 10), p: +it.precio, prov: pn, id: f.id});
+    }
+  }
+  for (const k in pre) pre[k].sort((a, b) => a.f.localeCompare(b.f) || a.id - b.id);
+  const sum = a => a.reduce((x, y) => x + y, 0), ord = o => Object.entries(o).sort((a, b) => b[1] - a[1]);
+  e.vTot = sum(e.vm); e.cTot = sum(e.cm); e.gTot = sum(e.gm); e.ticket = vs.length ? e.vTot / vs.length : 0;
+  e.mejor = vs.length ? e.vm.reduce((b, v, i) => v > e.vm[b] ? i : b, 0) : -1;
+  e.prod = Object.entries(prod).map(([nm, o]) => ({nm, q: o.q, im: o.im})).sort((a, b) => b.im - a.im);
+  const uni = Object.fromEntries(e.prod.map(p => [p.nm, p])); for (const p of d.prods || []) if (!(p.nombre in uni)) uni[p.nombre] = {nm: p.nombre, q: 0, im: 0};
+  e.peores = Object.values(uni).sort((a, b) => a.q - b.q || a.im - b.im || a.nm.localeCompare(b.nm));
+  e.porUni = [...e.prod].sort((a, b) => b.q - a.q);
+  e.prodGan = Object.entries(gan).sort((a, b) => a[1] - b[1]);
+  e.cli = ord(cli); e.prov = ord(prov);
+  e.insGasto = Object.entries(ins).map(([nm, o]) => ({nm, q: o.q, im: o.im})).sort((a, b) => b.im - a.im);
+  e.pre = pre;
+  e.vari = Object.entries(pre).filter(([, a]) => a.length >= 2 && a[0].p > 0).map(([nm, a]) => ({nm, p0: a[0].p, p1: a.at(-1).p, v: a.at(-1).p / a[0].p - 1, n: a.length})).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  e.insOrden = Object.entries(pre).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])).map(x => x[0]);
+  const desp = (k, mm) => { const t = +k.slice(0, 4) * 12 + +k.slice(5, 7) - 1 + mm; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; };
+  const hoyK = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+  const tot = (keys, dia = 32) => { const ks = new Set(keys); let v = 0, c = 0, g = 0;
+    for (const x of vs0) if (okF(x.fecha) && ks.has(x.fecha.slice(0, 7)) && +x.fecha.slice(8, 10) <= dia) { v += mv(x); g += x.gan || 0; }
+    for (const f of fs0) if (okF(f.fecha) && ks.has(f.fecha.slice(0, 7))) c += mf(f);
+    return [v, c, g]; };
+  const dl = (a, b) => b > 0 ? a / b - 1 : null;
+  e.d = {}; e.prevTxt = "";
+  if (E.per !== "todo") { const corte = claves.filter(k => k <= hoyK), ant = tot(corte.map(k => desp(k, -12))), act = tot(corte);
+    e.d = {v: dl(act[0], ant[0]), c: dl(act[1], ant[1]), g: dl(act[2], ant[2])}; e.prevTxt = E.per === "12" ? "período anterior" : String(+E.per - 1); }
+  e.mes = {k: hoyK, dia: hoy.getDate(), v: tot([hoyK], hoy.getDate())[0], vp: tot([desp(hoyK, -1)], hoy.getDate())[0], vl: tot([desp(hoyK, -12)], hoy.getDate())[0], dl};
+  e.dl = dl; e.mar = estMargenes(claves[0] + "-01");
+  return e;
+}
+function estMargenes(desde) {
+  const snaps = (S.data.costos || {}).snaps || [];
+  if (snaps.length < 2) return {f: [], base: null};
+  const base = [...snaps].reverse().find(x => x.f <= desde) || snaps[0];
+  if (base === snaps.at(-1)) return {f: [], base: null};
+  const out = [];
+  for (const p of S.data.prods || []) {
+    const b = base.p[p.nombre]; if (!b || !b[1] || !p.base) continue;
+    const m0_ = (b[1] - b[0]) / b[1], m1_ = (p.base - p.costo) / p.base;
+    if (m1_ < m0_ - 0.01 && b[0] > 0) out.push({n: p.nombre, m0: m0_, m1: m1_, v: p.costo / b[0] - 1, sug: m0_ < 1 ? p.costo / (1 - m0_) * 1.21 : null});
+  }
+  out.sort((a, b) => (a.m1 - a.m0) - (b.m1 - b.m0));
+  return {f: out, base: base.f};
+}
+const m0 = v => "$ " + Math.round(v).toLocaleString("es-AR");
+const estVacio = t => `<div class="vacio" style="padding:26px 10px">${t || "Sin datos en este período"}</div>`;
+function estBarrasMes(e, series) {
+  if (!series.some(s => s.v.some(x => x > 0))) return estVacio();
+  const W = 360, H = 210, ml = 46, mr = 6, mt = 26, mb = 24, n = e.n, k = series.length;
+  const top = Math.max(...series.map(s => Math.max(...s.v))), tk = marcasEje(0, top * 1.02 || 1), ymax = tk.at(-1) || 1;
+  const y0 = mt, y1 = H - mb, py = v => y1 - (y1 - y0) * v / ymax, aw = (W - ml - mr) / n, bw = Math.max(3, Math.min(20, (aw * .74 - 2 * (k - 1)) / k)), oc = bw * k + 2 * (k - 1), salto = n <= 14 ? 1 : Math.ceil(n / 12);
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="grafico" role="img" aria-label="Gráfico por mes">`;
+  for (const t of tk) s += `<line x1="${ml}" x2="${W - mr}" y1="${py(t)}" y2="${py(t)}" stroke="var(--borde)"/><text x="${ml - 5}" y="${py(t) + 3.5}" text-anchor="end" class="gt">${abrevM(t)}</text>`;
+  let lx = ml; for (const se of series) { s += `<rect x="${lx}" y="6" width="10" height="10" rx="2" fill="${se.c}"/><text x="${lx + 14}" y="15" class="gt" style="fill:var(--text)">${se.n}</text>`; lx += 24 + se.n.length * 6; }
+  for (let i = 0; i < n; i++) {
+    const cx = ml + aw * (i + .5), xi = cx - oc / 2, sel = S.est.mes === i;
+    if (sel) s += `<rect x="${ml + aw * i}" y="${y0}" width="${aw}" height="${y1 - y0}" fill="var(--chip)" rx="4"/>`;
+    series.forEach((se, j) => { if (se.v[i] > 0) s += `<rect x="${xi + j * (bw + 2)}" y="${py(se.v[i])}" width="${bw}" height="${y1 - py(se.v[i])}" rx="2" fill="${se.c}"/>`; });
+    if (i % salto === 0) s += `<text x="${cx}" y="${H - 8}" text-anchor="middle" class="gt">${e.etq[i]}</text>`;
+    s += `<rect data-em="${i}" x="${ml + aw * i}" y="${y0}" width="${aw}" height="${y1 - y0}" fill="transparent" style="cursor:pointer"/>`;
+  }
+  s += `<line x1="${ml}" x2="${W - mr}" y1="${y1}" y2="${y1}" stroke="var(--suave)"/></svg>`;
+  const i = S.est.mes != null && S.est.mes < n ? S.est.mes : (e.mejor >= 0 ? e.mejor : 0);
+  return s + `<div class="estdet"><b>${esc(e.etq[i])}${n <= 12 ? " " + e.claves[i].slice(0, 4) : ""}</b>` + series.map(se => ` · ${se.n}: ${m0(se.v[i])}`).join("") + `</div>`;
+}
+function estBarrasH(items, color, fmt) {
+  if (!items.length) return estVacio();
+  const mx = Math.max(...items.map(x => x.v)) || 1;
+  return `<div class="hb">` + items.map(x => `<div class="hbr"><div class="hbn">${esc(cortar(x.n, 30))}</div><div class="hbt"><i style="width:${Math.max(1.5, 100 * x.v / mx)}%;background:${color}"></i></div><div class="hbv">${x.t != null ? esc(x.t) : fmt(x.v)}</div></div>`).join("") + `</div>`;
+}
+function estTorta(items) {
+  items = items.filter(([, v]) => v > 0); if (!items.length) return estVacio();
+  if (items.length > 7) items = [...items.slice(0, 6), ["Otros", items.slice(6).reduce((a, [, v]) => a + v, 0)]];
+  const tot = items.reduce((a, [, v]) => a + v, 0), R = 40, C = 2 * Math.PI * R; let acc = 0;
+  const col = (nm, i) => nm === "Otros" ? "var(--gris)" : `var(--c${i + 1})`;
+  let s = `<div class="torta"><svg viewBox="0 0 120 120" role="img" aria-label="Gráfico de torta"><g transform="rotate(-90 60 60)">`;
+  items.forEach(([nm, v], i) => { const f = v / tot; s += `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${col(nm, i)}" stroke-width="22" stroke-dasharray="${Math.max(0, f * C - (items.length > 1 ? 1.5 : 0))} ${C}" stroke-dashoffset="${-acc * C}"/>`; acc += f; });
+  s += `</g><text x="60" y="56" text-anchor="middle" class="gt">Total</text><text x="60" y="71" text-anchor="middle" style="font-size:11px;font-weight:700;fill:var(--text)">${abrevM(tot)}</text></svg><div class="tl">`;
+  items.forEach(([nm, v], i) => { s += `<div class="tlr"><span class="dot" style="background:${col(nm, i)}"></span><span class="tln">${esc(cortar(nm, 26))}</span><span class="tlv">${m0(v)}</span><b>${(100 * v / tot).toFixed(0)}%</b></div>`; });
+  return s + `</div></div>`;
+}
+function estLinea(pts) {
+  if (!pts || !pts.length) return estVacio("Elegí un insumo (hace falta tener facturas cargadas)");
+  const W = 360, H = 200, ml = 62, mr = 14, mt = 12, mb = 26, d0 = new Date(pts[0].f + "T12:00:00"), d1 = new Date(pts.at(-1).f + "T12:00:00"), span = Math.max((d1 - d0) / 864e5, 1);
+  const ps = pts.map(p => p.p), lo = Math.min(...ps), hi = Math.max(...ps), pad = (hi - lo) * .18 || hi * .1 || 1, tk = marcasEje(Math.max(0, lo - pad), hi + pad), ymin = tk[0], ymax = tk.at(-1);
+  const px = p => pts.length === 1 ? (ml + W - mr) / 2 : ml + 8 + (W - mr - ml - 16) * ((new Date(p.f + "T12:00:00") - d0) / 864e5) / span, py = v => H - mb - (H - mb - mt) * (v - ymin) / ((ymax - ymin) || 1);
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="grafico" role="img" aria-label="Evolución del precio">`;
+  for (const t of tk) s += `<line x1="${ml}" x2="${W - mr}" y1="${py(t)}" y2="${py(t)}" stroke="var(--borde)"/><text x="${ml - 5}" y="${py(t) + 3.5}" text-anchor="end" class="gt">$ ${Math.round(t).toLocaleString("es-AR")}</text>`;
+  const ms = []; let a = d0.getFullYear(), mm = d0.getMonth() + 1; while (a < d1.getFullYear() || (a === d1.getFullYear() && mm <= d1.getMonth() + 1)) { ms.push([a, mm]); if (++mm > 12) { mm = 1; a++; } }
+  const sal = Math.max(1, Math.ceil(ms.length / 6));
+  ms.forEach(([aa, m2], i) => { if (i % sal) return; const dd = new Date(aa, m2 - 1, 1), x = px({f: (dd < d0 ? d0 : dd).toISOString().slice(0, 10)}); s += `<text x="${Math.min(Math.max(x, ml + 10), W - mr - 10)}" y="${H - 8}" text-anchor="middle" class="gt">${MES3[m2 - 1]}${d0.getFullYear() !== d1.getFullYear() ? " " + String(aa).slice(2) : ""}</text>`; });
+  s += `<line x1="${ml}" x2="${W - mr}" y1="${H - mb}" y2="${H - mb}" stroke="var(--suave)"/>`;
+  if (pts.length > 1) s += `<polyline points="${pts.map(p => px(p) + "," + py(p.p)).join(" ")}" fill="none" stroke="var(--c1)" stroke-width="2" stroke-linejoin="round"/>`;
+  const sel = S.est.pi != null && S.est.pi < pts.length ? S.est.pi : pts.length - 1;
+  pts.forEach((p, i) => { s += `<circle cx="${px(p)}" cy="${py(p.p)}" r="${i === sel ? 6 : 4.5}" fill="var(--c1)" stroke="var(--card)" stroke-width="2"/><circle data-ept="${i}" cx="${px(p)}" cy="${py(p.p)}" r="14" fill="transparent" style="cursor:pointer"/>`; });
+  const p = pts[sel], ant = sel ? pts[sel - 1].p : null;
+  return s + `</svg><div class="estdet"><b>${fmtFecha(p.f)}</b> · ${esc(p.prov)} · ${money(p.p)}${ant ? ` · <span class="${p.p > ant ? "rojo" : p.p < ant ? "verde" : ""}">${p.p / ant - 1 >= 0 ? "+" : ""}${((p.p / ant - 1) * 100).toFixed(1).replace(".", ",")}% vs. anterior</span>` : ""}</div>`;
+}
+const desp2 = (k, mm) => { const t = +k.slice(0, 4) * 12 + +k.slice(5, 7) - 1 + mm; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; };
+const pctS = d => (d >= 0 ? "+" : "−") + (Math.abs(d) * 100).toFixed(1).replace(".", ",") + " %";
+const dltH = (d, bueno, txt) => d == null ? "" : `<div class="t2 ${bueno ? (d >= 0 ? "verde" : "rojo") : ""}"><b>${pctS(d)}</b> vs. ${txt}</div>`;
+function vEstadisticas() {
+  const E = S.est, pers = estPeriodos(); if (!pers.includes(E.per)) E.per = "12";
+  const e = estCalc(), tarj = (t, h, extra) => `<div class="card"><div class="fila" style="gap:8px;margin-bottom:6px"><h3 class="g" style="margin:0;text-transform:none">${t}</h3>${extra || ""}</div>${h}</div>`;
+  const insSel = e.insOrden.includes(E.ins) ? E.ins : (e.insOrden[0] || "");
+  const kpiMejor = e.mejor >= 0 ? `${MESES[+e.claves[e.mejor].slice(5, 7) - 1]}${e.n > 12 ? " " + e.claves[e.mejor].slice(0, 4) : ""}` : "—";
+  let h = `<h2>Estadísticas</h2><div class="seg">${pers.map(p => `<button data-ep="${p}" class="${E.per === p ? "on" : ""}">${p === "12" ? "12 meses" : p === "todo" ? "Todo" : p}</button>`).join("")}</div>
+  <div class="seg"><button data-ei="1" class="${E.iva ? "on" : ""}">Con IVA</button><button data-ei="0" class="${E.iva ? "" : "on"}">Sin IVA</button></div>
+  <div class="grid2"><div class="stat"><div class="l">Ventas</div><div class="n nw">${m0(e.vTot)}</div>${dltH(e.d.v, true, e.prevTxt)}</div><div class="stat"><div class="l">Compras</div><div class="n nw">${m0(e.cTot)}</div>${dltH(e.d.c, false, e.prevTxt)}</div>
+  <div class="stat"><div class="l">Ganancia</div><div class="n nw verde">${m0(e.gTot)}</div>${dltH(e.d.g, true, e.prevTxt)}</div><div class="stat"><div class="l">Mejor mes${e.mejor >= 0 ? " · " + abrevM(e.vm[e.mejor]) : ""}</div><div class="n">${kpiMejor}</div></div>
+  <div class="stat"><div class="l">Más vendido</div><div class="n" style="font-size:17px">${esc(e.prod[0] ? cortar(e.prod[0].nm, 22) : "—")}</div></div><div class="stat"><div class="l">Venta promedio</div><div class="n">${e.vs.length ? m0(e.ticket) : "—"}</div></div></div>`;
+  { const ms = e.mes, nom = MESES[+ms.k.slice(5, 7) - 1], ant = MESES[+desp2(ms.k, -1).slice(5, 7) - 1].toLowerCase(), d1 = e.dl(ms.v, ms.vp), d2 = e.dl(ms.v, ms.vl);
+    h += `<div class="card" style="margin-top:10px"><div class="t2">${nom} hasta el ${ms.dia}</div><div class="monto" style="font-size:20px">${m0(ms.v)}</div>${dltH(d1, true, ant + " a la misma fecha")}${dltH(d2, true, nom.toLowerCase() + " del año pasado")}</div>`; }
+  h += `<h3>Ventas y compras por mes</h3><div class="card">${estBarrasMes(e, [{n: "Ventas", v: e.vm, c: "var(--c1)"}, {n: "Compras", v: e.cm, c: "var(--c2)"}])}</div>`;
+  h += `<h3>Ganancia por mes</h3><div class="card">${estBarrasMes(e, [{n: "Ganancia", v: e.gm, c: "var(--c3)"}])}</div>`;
+  h += `<h3>Ventas por día de la semana</h3><div class="card">${e.dias.some(x => x > 0) ? estBarrasH(DIAS7.map((n, i) => ({n, v: e.dias[i]})), "var(--c4)", m0) : estVacio()}</div>`;
+  h += `<h3>Productos más vendidos (importe)</h3><div class="card">${estTorta(e.prod.map(p => [p.nm, p.im]))}</div>`;
+  h += `<h3>Productos más vendidos (unidades)</h3><div class="card">${estBarrasH(e.porUni.slice(0, 8).map(p => ({n: p.nm, v: p.q, t: cant(p.q) + " u."})), "var(--c1)")}</div>`;
+  h += `<h3>Productos que se venden mal</h3><div class="card">${estBarrasH(e.peores.slice(0, 8).map(p => ({n: p.nm, v: p.q, t: p.q <= 0 ? "Sin ventas" : cant(p.q) + " u."})), "var(--c5)")}</div>`;
+  h += `<h3>Productos que menos ganancia dejan</h3><div class="card">${estBarrasH(e.prodGan.slice(0, 8).map(([n, g]) => ({n, v: Math.max(g, 0), t: m0(g)})), "var(--c3)")}</div>`;
+  h += `<h3>Compras por proveedor</h3><div class="card">${estTorta(e.prov)}</div>`;
+  h += `<h3>Insumos en los que más gastás</h3><div class="card">${estBarrasH(e.insGasto.slice(0, 8).map(x => ({n: x.nm, v: x.im, t: m0(x.im)})), "var(--c2)")}</div>`;
+  h += `<h3>Clientes que más compran</h3><div class="card">${estTorta(e.cli)}</div>`;
+  h += `<h3>Cómo varía el precio de un insumo</h3><div class="card">${e.insOrden.length ? `<select id="estIns">${e.insOrden.map(n => `<option ${n === insSel ? "selected" : ""} value="${esc(n)}">${esc(n)}</option>`).join("")}</select><div style="height:8px"></div>` : ""}${estLinea(e.pre[insSel])}</div>`;
+  { const M = e.mar;
+    h += `<h3>Productos que perdieron margen</h3>` + (M.base == null
+      ? estVacio("Todavía no hay historial: la app de la PC anota los costos cuando cambian y desde ahí te avisa acá.")
+      : !M.f.length ? estVacio(`Ningún producto perdió margen desde el ${fmtFecha(M.base)}. Todo en orden.`)
+      : `<div class="t2" style="margin:0 4px 6px">Desde el ${fmtFecha(M.base)} subió el costo y el precio no acompañó. El precio sugerido recupera el margen que tenías.</div>` + M.f.slice(0, 15).map(x => `<div class="card fila"><div class="g"><div class="t1">${esc(x.n)}</div><div class="t2">Margen ${(x.m0 * 100).toFixed(1).replace(".", ",")} % → <span class="rojo">${(x.m1 * 100).toFixed(1).replace(".", ",")} %</span> · costo ${pctS(x.v)}</div></div><div style="text-align:right"><div class="t2">Precio sugerido</div><div class="monto">${x.sug ? money(x.sug) : "—"}</div></div></div>`).join("")); }
+  h += `<h3>Insumos que más variaron de precio</h3>` + (e.vari.length ? e.vari.slice(0, 15).map(x => `<div class="card fila" data-ev="${esc(x.nm)}" style="cursor:pointer"><div class="g"><div class="t1">${esc(x.nm)}</div><div class="t2">${money(x.p0)} → ${money(x.p1)} · ${x.n} compras</div></div><div class="monto ${x.v > .0005 ? "rojo" : x.v < -.0005 ? "verde" : ""}">${x.v >= 0 ? "+" : ""}${(x.v * 100).toFixed(1).replace(".", ",")}%</div></div>`).join("") : estVacio("Hacen falta al menos dos compras del mismo insumo"));
+  return h + `<div class="t2" style="margin:10px 4px 0">Rojo: te cuesta más · Verde: te cuesta menos. Tocá una barra del gráfico mensual o un punto del precio para ver el detalle.</div>`;
+}
+document.addEventListener("click", ev => {
+  const q = a => ev.target.closest(`[${a}]`); if (S.vista !== "estadisticas" || ev.target.closest("#sheet")) return;
+  let t;
+  if ((t = q("data-ep"))) { S.est.per = t.dataset.ep; S.est.mes = null; S.est.pi = null; return pintar(); }
+  if ((t = q("data-ei"))) { S.est.iva = t.dataset.ei === "1"; return pintar(); }
+  if ((t = q("data-em"))) { S.est.mes = +t.dataset.em; return pintar(); }
+  if ((t = q("data-ept"))) { S.est.pi = +t.dataset.ept; return pintar(); }
+  if ((t = q("data-ev"))) { S.est.ins = t.dataset.ev; S.est.pi = null; pintar(); const g = $("#estIns"); if (g) g.scrollIntoView({block: "center", behavior: "smooth"}); }
+});
 
 /* ---------- eventos ---------- */
 document.addEventListener("click", e => {
@@ -794,7 +997,7 @@ document.addEventListener("click", e => {
 $("#vista").addEventListener("input", e => {
   if (e.target.id === "bus") { S.busca = e.target.value; const pos = e.target.selectionStart; pintar(); const n = $("#bus"); n.focus(); n.setSelectionRange(pos, pos); }
 });
-$("#vista").addEventListener("change", e => { if (e.target.id === "secSel") { S.seccion = e.target.value; pintar(); } if (e.target.id === "catSel") { S.catRec = e.target.value; pintar(); } });
+$("#vista").addEventListener("change", e => { if (e.target.id === "secSel") { S.seccion = e.target.value; pintar(); } if (e.target.id === "catSel") { S.catRec = e.target.value; pintar(); } if (e.target.id === "estIns") { S.est.ins = e.target.value; S.est.pi = null; pintar(); } });
 $("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") cerrarSheet(); });
 $("#bSync").onclick = () => sincronizar(true);
 $("#bAjustes").onclick = abrirAjustes;
