@@ -754,17 +754,20 @@ function abrirCliente(n) {
 
 function vConsultar() {
   const d = S.data, qn = norm(S.busca);
-  let h = `<h2>Consultar</h2><div class="seg">${[["productos", "Productos"], ["insumos", "Insumos"], ["stock", "Stock"]].map(([k, t]) => `<button data-k="${k}" class="${S.consulta === k ? "on" : ""}">${t}</button>`).join("")}</div><input id="bus" type="search" placeholder="Buscar…" value="${esc(S.busca)}" autocomplete="off"><div style="height:10px"></div>`;
+  let h = `<h2>Consultar</h2><div class="seg">${[["productos", "Productos"], ["insumos", "Insumos y stock"]].map(([k, t]) => `<button data-k="${k}" class="${(S.consulta === "stock" ? "insumos" : S.consulta) === k ? "on" : ""}">${t}</button>`).join("")}</div><input id="bus" type="search" placeholder="Buscar…" value="${esc(S.busca)}" autocomplete="off"><div style="height:10px"></div>`;
   if (S.consulta === "productos") {
     const l = d.prods.filter(p => !qn || norm(p.nombre).includes(qn));
     h += l.length ? l.slice(0, 120).map(p => `<div class="card"><div class="fila"><div class="g t1">${esc(p.nombre)}</div><div class="monto">${money(p.total)}</div></div><div class="t2">Costo ${money(p.costo)} · Ganancia <span class="verde">${money(p.base - p.costo)}</span> · ${p.base ? ((p.base - p.costo) / p.base * 100).toFixed(1).replace(".", ",") : "0"} %</div></div>`).join("") : `<div class="vacio">Sin resultados</div>`;
-  } else if (S.consulta === "insumos") {
-    const l = d.insumos.filter(i => !qn || norm(i.nombre).includes(qn));
-    h += l.length ? `<div class="card" style="padding:4px 12px">` + l.slice(0, 200).map(i => `<div class="item fila" style="padding:10px 0;border-bottom:1px solid var(--borde)"><div class="g">${esc(i.nombre)}</div><div class="monto">${money(i.precio)}</div></div>`).join("") + `</div>` : `<div class="vacio">Sin resultados</div>`;
   } else {
-    const act = stockActual(d.stock), l = d.insumos.filter(i => !qn || norm(i.nombre).includes(qn)).map(i => ({n: i.nombre, e: estadoStock(i.nombre, act, d.stock.minimos, i.nombre in act), s: act[i.nombre] || 0, mn: d.stock.minimos[i.nombre]})).filter(x => x.e !== "—");
-    const ord = {Negativo: 0, Bajo: 1, OK: 2}; l.sort((a, b) => ord[a.e] - ord[b.e] || norm(a.n).localeCompare(norm(b.n)));
-    h += l.length ? l.map(x => `<div class="card fila"><div class="g"><div class="t1">${esc(x.n)}</div><div class="t2">${x.mn != null ? "Mínimo " + cant(x.mn) : "Sin mínimo"}</div></div><div style="text-align:right"><div class="monto">${cant(x.s)}</div><span class="badge ${x.e === "OK" ? "ok" : "mal"}">${x.e}</span></div></div>`).join("") : `<div class="vacio">Todavía no hay stock cargado</div>`;
+    const act = stockActual(d.stock), mins = d.stock.minimos || {}, fl = S.insFiltro || "todos";
+    const todos = d.insumos.map(i => ({n: i.nombre, p: i.precio, e: estadoStock(i.nombre, act, mins, i.nombre in act), s: act[i.nombre], mn: mins[i.nombre]}));
+    const nBajo = todos.filter(x => x.e === "Bajo" || x.e === "Negativo").length, nCon = todos.filter(x => x.s !== undefined).length;
+    const valor = todos.reduce((a, x) => a + (x.s !== undefined ? Math.max(x.s, 0) * x.p : 0), 0);
+    h += `<div class="seg"><button data-kf="todos" class="${fl === "todos" ? "on" : ""}">Todos</button><button data-kf="con" class="${fl === "con" ? "on" : ""}">Con stock</button><button data-kf="bajo" class="${fl === "bajo" ? "on" : ""}">Bajo mínimo${nBajo ? " (" + nBajo + ")" : ""}</button></div>`;
+    h += `<div class="t2" style="margin:0 4px 8px">${nCon} con stock cargado · valor del stock <b>${m0(valor)}</b>${nBajo ? ` · <span class="rojo"><b>${nBajo}</b> bajo mínimo</span>` : ""}</div>`;
+    let l = todos.filter(x => (!qn || norm(x.n).includes(qn)) && (fl === "todos" || (fl === "con" && x.s !== undefined) || (fl === "bajo" && (x.e === "Bajo" || x.e === "Negativo"))));
+    const ord = {Negativo: 0, Bajo: 1}; if (fl === "bajo") l.sort((a, b) => (ord[a.e] ?? 2) - (ord[b.e] ?? 2) || norm(a.n).localeCompare(norm(b.n)));
+    h += l.length ? l.slice(0, 250).map(x => `<div class="card fila"><div class="g"><div class="t1">${esc(x.n)}</div><div class="t2">${money(x.p)}${x.s !== undefined ? " · " + (x.mn != null ? "Mínimo " + cant(x.mn) : "Sin mínimo") : ""}</div></div>${x.s !== undefined ? `<div style="text-align:right"><div class="monto">${cant(x.s)}</div>${x.e !== "—" ? `<span class="badge ${x.e === "OK" ? "ok" : "mal"}">${x.e}</span>` : ""}</div>` : `<div class="t2">Sin stock cargado</div>`}</div>`).join("") : `<div class="vacio">${fl === "bajo" ? "Ningún insumo está bajo el mínimo" : "Sin resultados"}</div>`;
   }
   return h;
 }
@@ -780,7 +783,7 @@ function cerrarSheet() { $("#sheet").classList.remove("on"); $("#sheetIn").style
 })();
 function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">11 · categorías de recetas (26/10)</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">12 · insumos y stock juntos (26/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
@@ -985,6 +988,7 @@ document.addEventListener("click", e => {
   if (t.dataset.mesc) { const [a, mm] = S.mesC.split("-").map(Number), d = new Date(a, mm - 1 + Number(t.dataset.mesc), 1); S.mesC = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; return pintar(); }
   if (t.dataset.go) { if (t.dataset.go === "ajustes") return abrirAjustes(); S.vista = t.dataset.go; S.busca = ""; scrollTo(0, 0); return pintar(); }
   if (t.dataset.k) { S.consulta = t.dataset.k; S.busca = ""; return pintar(); }
+  if (t.dataset.kf) { S.insFiltro = t.dataset.kf; return pintar(); }
   if (t.closest("#vista")) {
     const fila = e.target.closest("[data-p]"); if (fila) return agregarAlCarrito(fila.dataset.p);
     const cv = e.target.closest("[data-v]"); if (cv) return abrirVenta(+cv.dataset.v);
