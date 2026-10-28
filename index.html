@@ -442,6 +442,35 @@ function estadoStock(n, act, min, tiene) {
   if (s < -1e-9) return "Negativo"; if (n in min && s <= min[n] + 1e-9) return "Bajo"; return "OK";
 }
 function resumenVentas(vs) { const r = {total: 0, iva: 0, costo: 0, gan: 0, n: vs.length}; for (const v of vs) { r.total += v.total; r.iva += v.iva; r.costo += v.costo; r.gan += v.gan; } return r; }
+/* ---------- fechas en que se vende más chocolate ---------- */
+const AVISO_FECHA_DIAS = 31;
+const iso = (a, m, d) => `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+function pascua(a) {
+  const x = a % 19, b = Math.floor(a / 100), c = a % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * x + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, mm = Math.floor((x + 11 * h + 22 * l) / 451);
+  return iso(a, Math.floor((h + l - 7 * mm + 114) / 31), (h + l - 7 * mm + 114) % 31 + 1);
+}
+function domingo(a, mes, n) { const w = new Date(Date.UTC(a, mes - 1, 1)).getUTCDay(); return iso(a, mes, 1 + (7 - w) % 7 + 7 * (n - 1)); }
+function fechasChocolate(a) {
+  return [[iso(a, 1, 1), "Año Nuevo", "Brindis y regalos de fin de año"], [iso(a, 1, 6), "Reyes Magos", "Rosca y bombones para regalar"],
+    [iso(a, 2, 14), "Día de los Enamorados", "Una de las fechas fuertes: bombones y cajas"], [iso(a, 3, 8), "Día de la Mujer", "Cajas y regalos chicos"],
+    [pascua(a), "Pascuas", "La fecha más fuerte: huevos y figuras"], [domingo(a, 6, 3), "Día del Padre", "Tabletas y cajas"],
+    [iso(a, 7, 7), "Día Mundial del Chocolate", "Buen momento para promociones"], [iso(a, 7, 20), "Día del Amigo", "Regalos chicos"],
+    [domingo(a, 8, 3), "Día de las Infancias", "Golosinas y figuras"], [domingo(a, 10, 3), "Día de la Madre", "Cajas de bombones"],
+    [iso(a, 12, 25), "Navidad", "Otra fecha fuerte: panettones, cajas y regalos"]].sort((x, y) => x[0].localeCompare(y[0]));
+}
+function proximasFechas(hoy, cuantas = 14) {
+  const a = +hoy.slice(0, 4), out = [];
+  for (const y of [a, a + 1]) for (const [f, n, t] of fechasChocolate(y)) if (f >= hoy) out.push({f, n, t, dias: diasEntre(f, hoy)});
+  return out.slice(0, cuantas);
+}
+const cuandoFecha = d => d === 0 ? "¡Hoy!" : d === 1 ? "Mañana" : `En ${d} días`;
+function vFechas() {
+  const ps = proximasFechas(hoyISO(), 12);
+  return `<h2>Fechas de venta</h2><div class="suave" style="margin-bottom:10px">Fechas en que se vende más chocolate. Te aviso en Inicio desde 1 mes antes.</div>` +
+    ps.map(p => { const av = p.dias <= AVISO_FECHA_DIAS; return `<div class="card fila"><span class="dot ${p.dias <= 7 ? "u" : ""}" style="${av ? "" : "visibility:hidden"}"></span><div class="g"><div class="t1">${esc(p.n)}</div><div class="t2">${esc(p.t)}</div><div class="t2 ${av ? "rojo" : ""}">${fmtFecha(p.f)} · ${cuandoFecha(p.dias)}${av ? "" : " · aviso desde el " + fmtFecha(new Date(Date.parse(p.f + "T00:00:00Z") - AVISO_FECHA_DIAS * 864e5).toISOString().slice(0, 10))}</div></div></div>`; }).join("");
+}
+
 function alertas() {
   const d = S.data, hoy = hoyISO(), out = [];
   for (const f of d.compras.facturas) {
@@ -463,6 +492,10 @@ function alertas() {
     const e = estadoStock(i.nombre, act, d.stock.minimos, i.nombre in act);
     if (e === "Bajo" || e === "Negativo") { const mn = d.stock.minimos[i.nombre]; out.push({o: 1e6, tipo: "Reponer", urg: true, t: `${i.nombre}: quedan ${cant(act[i.nombre] || 0)}` + (mn != null ? ` (mínimo ${cant(mn)})` : ""), c: e === "Bajo" ? "Stock bajo" : "Stock negativo"}); }
   }
+  for (const p of proximasFechas(hoy)) {
+    if (p.dias > AVISO_FECHA_DIAS) break;
+    out.push({o: (p.dias <= 7 ? 1 : 3) * 1e6 + p.dias, tipo: "Fecha", urg: p.dias <= 7, t: `${p.n} (${p.f.slice(8)}/${p.f.slice(5, 7)}) · ${p.t}`, c: cuandoFecha(p.dias)});
+  }
   return out.sort((a, b) => a.o - b.o);
 }
 
@@ -475,7 +508,7 @@ const ICO = {
   recetas: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M8 7.5h8"/>',
   mas: '<path d="M4 7h16M4 12h16M4 17h16"/>'};
 const TABS = [["inicio", "", "Inicio"], ["vender", "", "Vender"], ["ventas", "", "Ventas"], ["compras", "", "Compras"], ["recetas", "", "Recetas"], ["mas", "", "Más"]];
-const ES_MAS = ["mas", "clientes", "consultar", "estadisticas"];
+const ES_MAS = ["mas", "clientes", "consultar", "estadisticas", "fechas"];
 function pintarNav() { $("#nav").innerHTML = TABS.map(([k, i, t]) => `<button data-v="${k}" class="${S.vista === k || (k === "mas" && ES_MAS.includes(S.vista)) ? "on" : ""}"><i><svg viewBox="0 0 24 24">${ICO[k]}</svg></i>${t}</button>`).join(""); }
 function pintarEstado() {
   const e = $("#est");
@@ -496,8 +529,8 @@ function pintar() {
   if (S.error === "SESION") h += `<div class="aviso">Tu sesión de Google venció, pero podés seguir viendo los últimos datos.<div style="height:10px"></div><button class="b full" onclick="reconectar()">Reconectar con Google</button></div>`;
   else if (S.error) h += `<div class="aviso">${esc(S.error)}</div>`;
   if (S.offline) h += `<div class="aviso">Sin conexión: ves los últimos datos guardados. Para registrar ventas hace falta internet.</div>`;
-  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, compras: vCompras, recetas: vRecetas, mas: vMas, clientes: vClientes, consultar: vConsultar, estadisticas: vEstadisticas})[S.vista]();
-  if (["clientes", "consultar", "estadisticas"].includes(S.vista)) h = `<button class="b sec" data-go="mas" style="margin-bottom:6px">‹ Más</button>` + h;
+  h += ({inicio: vInicio, vender: vVender, ventas: vVentas, compras: vCompras, recetas: vRecetas, mas: vMas, clientes: vClientes, consultar: vConsultar, estadisticas: vEstadisticas, fechas: vFechas})[S.vista]();
+  if (["clientes", "consultar", "estadisticas", "fechas"].includes(S.vista)) h = `<button class="b sec" data-go="mas" style="margin-bottom:6px">‹ Más</button>` + h;
   v.innerHTML = h;
   if (S.vista === "vender" && S.cart.length) cw.innerHTML = `<button id="cart" onclick="abrirCarrito()"><span>🛒 ${S.cart.reduce((a, l) => a + l.q, 0) ? cant(S.cart.reduce((a, l) => a + l.q, 0)) : 0} producto(s)</span><span style="flex:1"></span><span>${money(totalCarrito().total)} ›</span></button>`;
 }
@@ -528,6 +561,10 @@ function pantallaElegirExcel(v) {
   v.querySelectorAll("[data-e]").forEach(b => b.onclick = async () => { const h = S.candidatos[+b.dataset.e]; S.cfg.excel = h.name; await ubicarArchivos(h); sincronizar(true); });
 }
 
+function proxFechaCard() {
+  const p = proximasFechas(hoyISO(), 1)[0]; if (!p || p.dias > AVISO_FECHA_DIAS) return "";
+  return `<div class="card fila" data-go="fechas" style="cursor:pointer;border:1.5px solid var(--text)"><div style="font-size:26px">🍫</div><div class="g"><div class="t1">Se viene ${esc(p.n)}</div><div class="t2">${cuandoFecha(p.dias)} · ${fmtFecha(p.f)} · ¡a producir!</div></div><div class="suave">›</div></div>`;
+}
 function vInicio() {
   const d = S.data, mes = hoyISO().slice(0, 7), vm = d.ventas.ventas.filter(v => v.fecha.slice(0, 7) === mes), r = resumenVentas(vm);
   const meDeben = d.ventas.ventas.reduce((a, v) => a + Math.max(0, saldoVenta(v)), 0);
@@ -536,7 +573,7 @@ function vInicio() {
   return `<h2>${MESES[+mes.slice(5) - 1]}</h2>
   <div class="hero"><div class="hl">Vendido este mes (con IVA)</div><div class="hn">${money(r.total)}</div><div class="hs">Ganancia <b class="verde">${money(r.gan)}</b> · ${r.n} venta(s)</div></div>
   <div class="duo"><div><div class="l">Te deben clientes</div><div class="n">${money(meDeben)}</div></div><div><div class="l">Debés a proveedores</div><div class="n">${money(debo)}</div></div></div>
-  <h3>Para atender</h3>` + (al.length ? al.slice(0, 25).map(a => `<div class="card fila"><span class="dot ${a.urg ? "u" : ""}"></span><div class="g"><div class="t1">${esc(a.t)}</div><div class="t2 ${a.urg ? "rojo" : ""}">${esc(a.tipo)} · ${esc(a.c)}</div></div>${a.monto != null ? `<div class="monto">${money(a.monto)}</div>` : ""}</div>`).join("") : `<div class="vacio">Todo al día. No hay nada pendiente.</div>`);
+  ${proxFechaCard()}<h3>Para atender</h3>` + (al.length ? al.slice(0, 25).map(a => `<div class="card fila"><span class="dot ${a.urg ? "u" : ""}"></span><div class="g"><div class="t1">${esc(a.t)}</div><div class="t2 ${a.urg ? "rojo" : ""}">${esc(a.tipo)} · ${esc(a.c)}</div></div>${a.monto != null ? `<div class="monto">${money(a.monto)}</div>` : ""}</div>`).join("") : `<div class="vacio">Todo al día. No hay nada pendiente.</div>`);
 }
 
 function totalCarrito() { let base = 0, iva = 0, costo = 0; for (const l of S.cart) { base += l.u.base * l.q; iva += l.u.iva * l.q; costo += l.u.costo * l.q; } return {base, iva, costo, total: base + iva, gan: base - costo}; }
@@ -666,7 +703,7 @@ function abrirReceta(clave, mult = 1) {
 
 function vMas() {
   const it = (ic, t, sub, go) => `<div class="card fila" data-go="${go}" style="cursor:pointer"><div style="font-size:26px">${ic}</div><div class="g"><div class="t1">${t}</div><div class="t2">${sub}</div></div><div class="suave">›</div></div>`;
-  return `<h2>Más</h2>` + it("👥", "Clientes", "Quién te debe y sus ventas", "clientes") + it("📊", "Estadísticas", "Qué se vende más, qué mes, cómo varían los precios", "estadisticas") + it("🔎", "Consultar", "Precios de productos, insumos y stock", "consultar") + it("⚙", "Ajustes", "Cuenta de Google y nombre del Excel", "ajustes");
+  return `<h2>Más</h2>` + it("👥", "Clientes", "Quién te debe y sus ventas", "clientes") + it("📊", "Estadísticas", "Qué se vende más, qué mes, cómo varían los precios", "estadisticas") + it("📅", "Fechas de venta", "Navidad, Pascuas, San Valentín y más: te aviso 1 mes antes", "fechas") + it("🔎", "Consultar", "Precios de productos, insumos y stock", "consultar") + it("⚙", "Ajustes", "Cuenta de Google y nombre del Excel", "ajustes");
 }
 
 /* ----- compras ----- */
@@ -783,7 +820,7 @@ function cerrarSheet() { $("#sheet").classList.remove("on"); $("#sheetIn").style
 })();
 function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">12 · insumos y stock juntos (26/10)</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">13 · fechas de venta con aviso (27/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
