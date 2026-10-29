@@ -820,7 +820,8 @@ function cerrarSheet() { $("#sheet").classList.remove("on"); $("#sheetIn").style
 })();
 function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">13 · fechas de venta con aviso (27/10)</div>
+  <div class="t2" style="margin-top:6px">Excel en Drive: última vez que cambió</div><div class="t1" style="font-size:13px">${S.data && S.data.xlsxMod ? esc(new Date(S.data.xlsxMod).toLocaleString("es-AR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})) : "—"}</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">14 · se actualiza sola cada minuto (28/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
@@ -1044,6 +1045,13 @@ $("#bSync").onclick = () => sincronizar(true);
 $("#bAjustes").onclick = abrirAjustes;
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.cfg.clientId && S.data && Date.now() - (S.data.cuando || 0) > 60000 && !$("#sheet").classList.contains("on")) sincronizar(); });
 window.addEventListener("online", () => sincronizar());
+/* Mientras la app está abierta mira Drive cada minuto: si el Excel o los datos cambiaron (por ejemplo una receta nueva cargada en la PC), se actualiza sola. */
+setInterval(() => {
+  if (document.hidden || !S.cfg.clientId || !S.data || S.cargando || S.error === "SESION" || S.offline) return;
+  const a = document.activeElement;
+  if ($("#sheet").classList.contains("on") || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+  const y = scrollY; sincronizar().then(() => scrollTo(0, y));
+}, 60000);
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 pintar();
 if (S.cfg.clientId) { if (S.data) pintar(); sincronizar(); }
