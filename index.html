@@ -290,12 +290,12 @@ function parsearExcel(hojas) {
     const h = hojas[hoja]; if (!h) continue;
     const filasN = [...h.keys()].sort((a, b) => a - b), max = filasN[filasN.length - 1] || 0, usados = new Set();
     for (let r = 2; r <= max; r++) {
-      if (txt((h.get(r) || {})[1]).toLowerCase() !== "ingredientes") continue;
+      if (txt((h.get(r) || {})[1]).toLowerCase().startsWith("ingredientes") === false) continue;
       const titulo = txt((h.get(r - 1) || {})[1]); if (!titulo) continue;
       const filas = [];
       for (let rr = r + 1; rr <= max; rr++) {
         const c = h.get(rr) || {}, t = txt(c[1]).toLowerCase();
-        if (t === "total" || t === "ingredientes") break;
+        if (t === "total" || t.startsWith("ingredientes")) break;
         if (txt(c[1]) && typeof c[2] === "number" && c[2]) filas.push({n: txt(c[1]), c: c[2], u: txt(c[3]), p: nv(c[6]), costo: nv(c[7])});
       }
       let nombre = titulo, n = 2; while (usados.has(nombre)) nombre = `${titulo} (${n++})`; usados.add(nombre);
@@ -875,7 +875,7 @@ function abrirAjustes() {
   <div class="t2" style="margin-top:6px">Dónde está en tu Drive (el que lee esta app)</div><div class="t1" style="font-size:13px;overflow-wrap:anywhere" id="rutaDrv">Buscando…</div>
   <div class="t2" style="margin-top:6px">Excel en Drive: última vez que cambió</div><div class="t1" style="font-size:13px">${S.data && S.data.xlsxMod ? esc(new Date(S.data.xlsxMod).toLocaleString("es-AR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})) : "—"}</div>
   <div class="t2" style="margin-top:6px">Pantalla</div><div class="t1" style="font-size:13px">${innerWidth}×${innerHeight} · ${document.documentElement.classList.contains("lado") ? "horizontal (menú a la izquierda)" : innerWidth > innerHeight ? "horizontal" : "vertical"}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">17 · colores de marca y horizontal reforzado (29/10)</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">18 · lee recetas con encabezado largo (30/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
