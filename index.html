@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MADOM</title>
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f0e8"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1a1311">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#f3f3f1;--bg-a:rgba(243,243,241,.82);--card:#fff;--text:#0f0f0f;--suave:#6c6c70;--acc:#0f0f0f;--acc-t:#fff;--verde:#0b7a3e;--rojo:#c42b1c;--ambar:#a15c00;--borde:#e4e4e0;--campo:#f3f3f1;--chip:rgba(0,0,0,.075);--logo-inv:0;--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#6250d6;--gris:#9a938b;--sombra:0 10px 30px rgba(0,0,0,.14)}
-@media (prefers-color-scheme:dark){:root{--bg:#0b0b0c;--bg-a:rgba(11,11,12,.82);--card:#19191b;--text:#f5f5f5;--suave:#9a9aa1;--acc:#f5f5f5;--acc-t:#0b0b0c;--verde:#4cd48a;--rojo:#ff7a6e;--ambar:#f0b44a;--borde:#2a2a2d;--campo:#111113;--chip:rgba(255,255,255,.13);--logo-inv:1;--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#9085e9;--gris:#7d766f;--sombra:0 10px 30px rgba(0,0,0,.6)}}
+:root{--bg:#f5f0e8;--bg-a:rgba(245,240,232,.86);--card:#fffdf9;--text:#2a1d16;--suave:#6b5b4e;--acc:#2a1d16;--acc-t:#fff;--verde:#3f7a46;--rojo:#a63a2e;--ambar:#96610f;--borde:#e3d8c6;--campo:#efe7da;--chip:rgba(42,29,22,.08);--logo-inv:0;--car:#c08a4b;--c1:#c27a1a;--c2:#2f6fb0;--c3:#17956a;--c4:#c9483a;--c5:#8a5fd0;--c6:#d1527f;--gris:#9a8f82;--sombra:0 10px 30px rgba(42,29,22,.16)}
+@media (prefers-color-scheme:dark){:root{--bg:#1a1311;--bg-a:rgba(26,19,17,.86);--card:#251c18;--text:#f3ebdd;--suave:#bfb1a0;--acc:#e0b070;--acc-t:#1a1311;--verde:#8fc88a;--rojo:#f08a7c;--ambar:#e8b857;--borde:#3a2e27;--campo:#1f1714;--chip:rgba(243,235,221,.12);--logo-inv:1;--car:#e0b070;--c1:#c98500;--c2:#3987e5;--c3:#199e70;--c4:#d95926;--c5:#9085e9;--c6:#d55181;--gris:#7d766f;--sombra:0 10px 30px rgba(0,0,0,.6)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
 html,body{margin:0;background:var(--bg);color:var(--text);font:500 16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -46,7 +46,8 @@ h3{font-size:15px;margin:22px 0 8px;color:var(--suave);font-weight:650}
 .t2{font-size:13px;color:var(--suave);overflow-wrap:anywhere}
 .monto{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .verde{color:var(--verde)}.rojo{color:var(--rojo)}.ambar{color:var(--ambar)}.suave{color:var(--suave)}
-.hero{padding:6px 2px 14px}
+.hero{padding:6px 2px 14px 14px;border-left:3px solid var(--car);margin-bottom:6px}
+.card:not(.fila),.stat,.duo{border:1px solid var(--borde)}
 .hero .hl{font-size:14px;color:var(--suave);font-weight:600}
 .hero .hn{font-size:46px;line-height:1.05;font-weight:780;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin:2px 0 4px;overflow-wrap:anywhere}
 .hero .hs{font-size:15px;color:var(--suave)}
@@ -80,7 +81,7 @@ nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg-a);-web
 nav button{flex:1;min-width:0;border:0;background:transparent;color:var(--suave);font:inherit;font-size:11px;font-weight:650;padding:2px 0;display:flex;flex-direction:column;align-items:center;gap:2px;transition:color .15s}
 nav button i{display:grid;place-items:center;width:54px;height:30px;border-radius:99px;transition:background .2s}
 nav button.on{color:var(--text)}
-nav button.on i{background:var(--chip)}
+nav button.on i{background:color-mix(in srgb,var(--car) 30%,transparent)}
 nav button:active i{transform:scale(.92)}
 .badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--chip)}
 .badge.ok{color:var(--verde)}.badge.mal{color:var(--rojo)}.badge.med{color:var(--ambar)}
@@ -119,28 +120,27 @@ hr{border:0;border-top:1px solid var(--borde);margin:10px 0}
 .atajos .b{min-height:56px;font-size:17px}
 .lista .item{padding:16px 0}
 .lista .item .b{min-width:54px;min-height:50px}
-/* girado de costado (celulares): menú a la izquierda y contenido en dos columnas */
-@media (orientation:landscape) and (max-height:600px){
-  :root{--rail:calc(80px + env(safe-area-inset-left))}
-  body{padding-left:var(--rail);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-  header{padding:calc(2px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 2px 18px}
-  header .lg{height:32px}
-  nav{top:0;right:auto;bottom:0;width:var(--rail);flex-direction:column;justify-content:center;gap:2px;padding:6px 4px 6px calc(4px + env(safe-area-inset-left));overflow-y:auto;box-shadow:inset -1px 0 var(--borde)}
-  nav button{flex:none;padding:5px 0}
-  nav button i{width:48px;height:28px}
-  main{max-width:940px;padding:2px calc(18px + env(safe-area-inset-right)) 12px 18px}
-  h2{font-size:24px;margin:4px 0 10px}
-  .hero .hn{font-size:38px}
-  .dos{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
-  .lista{columns:2;column-gap:28px}.lista .item{break-inside:avoid}
-  #cart{bottom:calc(12px + env(safe-area-inset-bottom));left:calc(50% + var(--rail) / 2);width:min(calc(100% - var(--rail) - 40px),520px)}
-  #sheet .in{max-width:640px;max-height:96vh}
-  #toast{top:calc(50px + env(safe-area-inset-top))}
-  .torta svg{width:130px;height:130px}
-  .grafico{max-height:62vh}
-}
+/* girado de costado (celulares): lo activa el script con la clase .lado en <html> */
+html.lado{--rail:calc(80px + env(safe-area-inset-left))}
+html.lado body{padding-left:var(--rail);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+html.lado header{padding:calc(2px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 2px 18px}
+html.lado header .lg{height:32px}
+html.lado nav{top:0;right:auto;bottom:0;width:var(--rail);flex-direction:column;justify-content:center;gap:2px;padding:6px 4px 6px calc(4px + env(safe-area-inset-left));overflow-y:auto;box-shadow:inset -1px 0 var(--borde)}
+html.lado nav button{flex:none;padding:5px 0}
+html.lado nav button i{width:48px;height:28px}
+html.lado main{max-width:940px;padding:2px calc(18px + env(safe-area-inset-right)) 12px 18px}
+html.lado h2{font-size:24px;margin:4px 0 10px}
+html.lado .hero .hn{font-size:38px}
+html.lado .dos{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+html.lado .lista{columns:2;column-gap:28px}
+html.lado .lista .item{break-inside:avoid}
+html.lado #cart{bottom:calc(12px + env(safe-area-inset-bottom));left:calc(50% + var(--rail) / 2);width:min(calc(100% - var(--rail) - 40px),520px)}
+html.lado #sheet .in{max-width:640px;max-height:96vh}
+html.lado #toast{top:calc(50px + env(safe-area-inset-top))}
+html.lado .torta svg{width:130px;height:130px}
+html.lado .grafico{max-height:62vh}
 .gt{font-size:11px;fill:var(--suave);font-weight:600}
-.nw{white-space:nowrap;font-size:19px!important}.estdet{font-size:13.5px;color:var(--suave);margin-top:8px;overflow-wrap:anywhere}.estdet b{color:var(--text)}
+.nw{white-space:nowrap;font-size:19px!important}.estdet{font-size:14.5px;color:var(--suave);margin-top:10px;padding:10px 12px;background:var(--campo);border-radius:12px;overflow-wrap:anywhere}.estdet b{color:var(--text)}
 .hb{display:flex;flex-direction:column;gap:10px}
 .hbr{display:grid;grid-template-columns:minmax(0,34%) 1fr auto;gap:8px;align-items:center;font-size:13.5px}
 .hbn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
@@ -874,7 +874,8 @@ function abrirAjustes() {
   abrirSheet(`<h2>Ajustes</h2><div class="card"><div class="t2">Excel</div><div class="t1">${esc(S.cfg.excel)}</div>
   <div class="t2" style="margin-top:6px">Dónde está en tu Drive (el que lee esta app)</div><div class="t1" style="font-size:13px;overflow-wrap:anywhere" id="rutaDrv">Buscando…</div>
   <div class="t2" style="margin-top:6px">Excel en Drive: última vez que cambió</div><div class="t1" style="font-size:13px">${S.data && S.data.xlsxMod ? esc(new Date(S.data.xlsxMod).toLocaleString("es-AR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})) : "—"}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">16 · inicio nuevo y modo horizontal (29/10)</div>
+  <div class="t2" style="margin-top:6px">Pantalla</div><div class="t1" style="font-size:13px">${innerWidth}×${innerHeight} · ${document.documentElement.classList.contains("lado") ? "horizontal (menú a la izquierda)" : innerWidth > innerHeight ? "horizontal" : "vertical"}</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">17 · colores de marca y horizontal reforzado (29/10)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
@@ -1100,6 +1101,10 @@ $("#bSync").onclick = () => sincronizar(true);
 $("#bAjustes").onclick = abrirAjustes;
 document.addEventListener("visibilitychange", () => { if (!document.hidden && S.cfg.clientId && S.data && Date.now() - (S.data.cuando || 0) > 60000 && !$("#sheet").classList.contains("on")) sincronizar(); });
 window.addEventListener("online", () => sincronizar());
+function ajustarLado() { const lado = innerWidth > innerHeight && innerHeight <= 600; document.documentElement.classList.toggle("lado", lado); return lado; }
+try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
+ajustarLado(); addEventListener("resize", ajustarLado); addEventListener("orientationchange", () => setTimeout(ajustarLado, 120));
+if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener("change", () => setTimeout(ajustarLado, 120));
 /* Mientras la app está abierta mira Drive cada minuto: si el Excel o los datos cambiaron (por ejemplo una receta nueva cargada en la PC), se actualiza sola. */
 setInterval(() => {
   if (document.hidden || !S.cfg.clientId || !S.data || S.cargando || S.error === "SESION" || S.offline) return;
