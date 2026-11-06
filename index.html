@@ -672,6 +672,7 @@ async function guardarVenta() {
     });
     S.cart = []; guardarCart(); cerrarSheet(); S.vista = "ventas"; S.mes = fecha.slice(0, 7); pintar();
     toast("Venta registrada" + (aCobrar ? " · queda a cobrar" : ""));
+    verComprobante(venta.id, true);
   } catch (e) { btn.disabled = false; btn.textContent = "Guardar venta"; errorEscritura(e); }
 }
 function errorEscritura(e) { if (e.message === "SESION") { S.error = "SESION"; cerrarSheet(); pintar(); toast("Tu sesión de Google venció. Toca «Reconectar» y vuelve a guardar."); } else toast(e.message.startsWith("Drive") ? "No se pudo guardar en Drive (" + e.message + "). Intenta de nuevo." : e.message); }
@@ -697,6 +698,7 @@ function abrirVenta(id) {
   ${"pagos" in v ? `<div class="t2">Cobrado ${money(totalCobrado(v))} · Saldo ${money(sd)}</div>` : ""}${v.nota ? `<div class="t2">Nota: ${esc(v.nota)}</div>` : ""}</div>
   ${(v.pagos || []).length ? `<h3>Cobros</h3>` + v.pagos.map(p => `<div class="fila" style="padding:3px 0"><div class="g">${fmtFecha(p.fecha)} ${p.nota ? "· " + esc(p.nota) : ""}</div><div class="monto">${money(p.monto)}</div></div>`).join("") : ""}
   ${sd > 0.005 ? `<label>Cobrar ahora</label><input id="cm" inputmode="decimal" value="${m(sd)}"><label>Fecha</label><input id="cf" type="date" value="${hoyISO()}"><label>Nota (opcional)</label><input id="cn"><div style="height:12px"></div><button class="b full" id="cg">Registrar cobro</button><div style="height:8px"></div>` : ""}
+  <button class="b full" id="cv">Ver comprobante / compartir</button><div style="height:8px"></div>
   <button class="b peli full" id="ce">Eliminar venta</button><div style="height:8px"></div><button class="b sec full" onclick="cerrarSheet()">Cerrar</button>`);
   if (sd > 0.005) $("#cg").onclick = async () => {
     const monto = num($("#cm").value), fecha = $("#cf").value;
@@ -707,11 +709,84 @@ function abrirVenta(id) {
     try { await mutarVentas(base => { const x = base.ventas.find(y => y.id === id); if (!x) throw new Error("Esa venta ya no existe (se borró desde otro dispositivo)."); (x.pagos ||= []).push({fecha, monto: r2(monto), nota: $("#cn").value.trim()}); }); cerrarSheet(); pintar(); toast("Cobro registrado"); }
     catch (er) { b.disabled = false; b.textContent = "Registrar cobro"; errorEscritura(er); }
   };
+  $("#cv").onclick = () => verComprobante(id);
   $("#ce").onclick = async () => {
     if (!confirm(`¿Eliminar la venta del ${fmtFecha(v.fecha)} por ${money(v.total)}?`)) return;
     try { await mutarVentas(base => { base.ventas = base.ventas.filter(y => y.id !== id); }); cerrarSheet(); pintar(); toast("Venta eliminada"); } catch (er) { errorEscritura(er); }
   };
 }
+
+// ---------- comprobante de venta (imagen para ver y compartir) ----------
+function textoComprobante(v) {
+  const L = [`*MADOM* · Comprobante de venta N° ${String(v.id).padStart(5, "0")}`, fmtFecha(v.fecha)];
+  if (v.cliente) L.push("Cliente: " + v.cliente);
+  L.push("");
+  for (const l of v.lineas) L.push(`${cant(l.q)} × ${l.nombre} — ${money(l.q * l.total_u)}`);
+  L.push("", `*TOTAL: ${money(v.total)}*` + " (IVA incluido)");
+  if ("pagos" in v) { const sd = saldoVenta(v); L.push(sd > 0.005 ? `Cobrado: ${money(totalCobrado(v))} · Saldo a cobrar: ${money(sd)}` : "Pagado ✔"); }
+  if (v.nota) L.push("Nota: " + v.nota);
+  return L.join("\n");
+}
+function cargarImg(src) { return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+async function dibujarComprobante(v) {
+  const W = 720, K = 2, P = 36, filas = v.lineas, sd = "pagos" in v ? saldoVenta(v) : 0;
+  const extra = ("pagos" in v ? 2 : 0) + (v.nota ? 1 : 0);
+  const H = 250 + filas.length * 40 + 140 + extra * 34 + 30;
+  const c = document.createElement("canvas"); c.width = W * K; c.height = H * K;
+  const x = c.getContext("2d"); x.scale(K, K);
+  x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+  const F = "system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif";
+  const t = (txt, px, py, o = {}) => { x.font = `${o.b ? "700 " : ""}${o.s || 20}px ${F}`; x.fillStyle = o.c || "#2a1d16"; x.textAlign = o.a || "left"; x.fillText(txt, px, py); };
+  const logo = await cargarImg("logo.png");
+  if (logo) { const h = 56, w = logo.width * h / logo.height; x.drawImage(logo, P, 28, w, h); } else t("MADOM", P, 70, {b: 1, s: 30});
+  t("Comprobante de venta", W - P, 52, {b: 1, s: 22, a: "right"});
+  t(`N° ${String(v.id).padStart(5, "0")} · ${fmtFecha(v.fecha)}`, W - P, 80, {s: 17, a: "right", c: "#6b5b4e"});
+  x.fillStyle = "#2a1d16"; x.fillRect(P, 104, W - 2 * P, 2);
+  t("Cliente: " + (v.cliente || "—"), P, 142, {b: 1, s: 19});
+  let y = 182; t("Cant.", P, y, {s: 15, c: "#6b5b4e"}); t("Producto", P + 70, y, {s: 15, c: "#6b5b4e"}); t("Importe", W - P, y, {s: 15, c: "#6b5b4e", a: "right"});
+  y += 10; x.fillStyle = "#ccc"; x.fillRect(P, y, W - 2 * P, 1); y += 28;
+  for (const l of filas) {
+    let n = l.nombre; x.font = `18px ${F}`; while (x.measureText(n).width > 400 && n.length > 4) n = n.slice(0, -2);
+    if (n !== l.nombre) n = n.trimEnd() + "…";
+    t(cant(l.q), P, y, {s: 18}); t(n, P + 70, y, {s: 18}); t(money(l.q * l.total_u), W - P, y, {s: 18, a: "right"});
+    y += 14; x.fillStyle = "#eee"; x.fillRect(P, y, W - 2 * P, 1); y += 26;
+  }
+  y += 8;
+  const fila = (a, b, o = {}) => { t(a, W - P - 190, y, {s: o.s || 17, b: o.b, a: "right", c: o.c || "#444"}); t(b, W - P, y, {s: o.s || 17, b: o.b, a: "right", c: o.c}); y += o.paso || 32; };
+  fila("Subtotal (sin IVA)", money(v.base)); fila("IVA", money(v.iva));
+  x.fillStyle = "#2a1d16"; x.fillRect(W - P - 330, y - 18, 330, 1); y += 14;
+  fila("TOTAL", money(v.total), {b: 1, s: 24, c: "#2a1d16", paso: 40});
+  if ("pagos" in v) { fila("Cobrado", money(totalCobrado(v))); fila(sd > 0.005 ? "Saldo a cobrar" : "Pagado", sd > 0.005 ? money(sd) : "✔", {b: 1, c: sd > 0.005 ? "#a63a2e" : "#3f7a46"}); }
+  if (v.nota) { y += 6; t("Nota: " + v.nota.slice(0, 60), P, y, {s: 16, c: "#6b5b4e"}); y += 30; }
+  t("Comprobante no válido como factura", W / 2, H - 24, {s: 14, a: "center", c: "#999"});
+  return c;
+}
+async function verComprobante(id, recien) {
+  const v = S.data.ventas.ventas.find(z => z.id === id); if (!v) return;
+  abrirSheet(`<h2>${recien ? "Venta registrada ✓" : "Comprobante"}</h2><div id="cmp" class="vacio">Armando comprobante…</div>
+  <div style="height:10px"></div><button class="b full" id="cs">Compartir</button><div style="height:8px"></div>
+  <button class="b sec full" id="cw">Enviar por WhatsApp (texto)</button><div style="height:8px"></div>
+  <button class="b sec full" id="cd">Guardar imagen</button><div style="height:8px"></div>
+  <button class="b sec full" onclick="cerrarSheet()">${recien ? "Listo" : "Cerrar"}</button>`);
+  let blob = null; const nombre = `Madom_venta_${String(v.id).padStart(5, "0")}.png`;
+  try {
+    const cv = await dibujarComprobante(v);
+    blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    const img = document.createElement("img"); img.src = cv.toDataURL("image/png"); img.style.cssText = "width:100%;border-radius:10px;border:1px solid var(--borde);background:#fff";
+    const box = $("#cmp"); if (box) { box.className = ""; box.replaceChildren(img); }
+  } catch (e) { const box = $("#cmp"); if (box) box.textContent = "No pude armar la imagen; usa «Enviar por WhatsApp»."; }
+  $("#cs").onclick = async () => {
+    try {
+      const f = blob && new File([blob], nombre, {type: "image/png"});
+      if (f && navigator.canShare && navigator.canShare({files: [f]})) await navigator.share({files: [f], title: "Comprobante MADOM", text: `Comprobante de venta N° ${String(v.id).padStart(5, "0")}`});
+      else if (navigator.share) await navigator.share({title: "Comprobante MADOM", text: textoComprobante(v)});
+      else { descargarBlob(blob, nombre); toast("Tu navegador no puede compartir: guardé la imagen"); }
+    } catch (e) { if (e && e.name !== "AbortError") toast("No se pudo compartir"); }
+  };
+  $("#cw").onclick = () => window.open("https://wa.me/?text=" + encodeURIComponent(textoComprobante(v)), "_blank");
+  $("#cd").onclick = () => { if (blob) { descargarBlob(blob, nombre); toast("Imagen guardada"); } };
+}
+function descargarBlob(b, nombre) { if (!b) return; const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
 
 function vRecetas() {
   const d = S.data, over = d.cats || {}, qn = norm(S.busca), cat = S.catRec || "Todas";
@@ -875,7 +950,7 @@ function abrirAjustes() {
   <div class="t2" style="margin-top:6px">Dónde está en tu Drive (el que lee esta app)</div><div class="t1" style="font-size:13px;overflow-wrap:anywhere" id="rutaDrv">Buscando…</div>
   <div class="t2" style="margin-top:6px">Excel en Drive: última vez que cambió</div><div class="t1" style="font-size:13px">${S.data && S.data.xlsxMod ? esc(new Date(S.data.xlsxMod).toLocaleString("es-AR", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})) : "—"}</div>
   <div class="t2" style="margin-top:6px">Pantalla</div><div class="t1" style="font-size:13px">${innerWidth}×${innerHeight} · ${document.documentElement.classList.contains("lado") ? "horizontal (menú a la izquierda)" : innerWidth > innerHeight ? "horizontal" : "vertical"}</div>
-  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">18 · lee recetas con encabezado largo (30/10)</div>
+  <div class="t2" style="margin-top:6px">Versión de la app</div><div class="t1" style="font-size:13px">19 · comprobante de venta para ver y compartir (06/11)</div>
   <div class="t2" style="margin-top:6px">Client ID cargado</div><div class="t1" style="font-size:13px">${esc(verId(S.cfg.clientId))}</div>
   <div class="t2" style="margin-top:6px">Última actualización de datos</div><div class="t1">${S.data ? new Date(S.data.cuando).toLocaleString("es-AR") : "—"}</div></div>
   <label>Client ID de Google</label><input id="acid" value="${esc(S.cfg.clientId)}" autocapitalize="off"><label>Nombre del Excel</label><input id="aex" value="${esc(S.cfg.excel)}" autocapitalize="off">
